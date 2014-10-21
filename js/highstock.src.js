@@ -22108,6 +22108,7 @@ extend(Highcharts, {
 	discardElement: discardElement,
 	css: css,
 	each: each,
+	error: error,
 	extend: extend,
 	map: map,
 	merge: merge,
