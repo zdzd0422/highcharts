@@ -96,6 +96,7 @@
             len = points.length;
             for (i = 0; i < len; i += 1) {
 
+                // Add interpolated points
                 if (i > 0) {
                     deltaX = Math.abs(points[i].plotX - points[i - 1].plotX);
                     deltaY = Math.abs(points[i].plotY - points[i - 1].plotY);
@@ -113,11 +114,13 @@
                     }
                 }
 
+                // Add the point itself
                 if (typeof points[i].plotY === 'number') {
                     interpolated.push(points[i]);
                 }
             }
         }
+        console.log(this.name, interpolated.length)
         return interpolated;
     };
 
@@ -263,7 +266,7 @@
                 bBox = series.labelBySeries.getBBox();
                 bBox.width = Math.round(bBox.width);
 
-                console.log('-- ' + series.name + ' --');
+                //console.log('-- ' + series.name + ' --');
 
                 // Ideal positions are centered above or below a point on right side of chart
                 for (i = points.length - 1; i > 0; i -= 1) {
@@ -330,7 +333,7 @@
 
                 }
 
-                console.log('foundClosePosition', results.length);
+                //console.log('foundClosePosition', results.length);
 
                 // Brute force, try all positions on the chart in a 16x16 grid
                 if (!results.length) {
