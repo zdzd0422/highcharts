@@ -12815,7 +12815,11 @@ Series.prototype = {
 
 		// optionally filter out points outside the plot area
 		if (isCartesian && series.sorted && (!cropThreshold || dataLength > cropThreshold || series.forceCrop)) {
-			
+
+			simplifiedData = this.simplifyData(series.xData, series.yData, min, max);
+			processedXData = simplifiedData.xData;
+			processedYData = simplifiedData.yData;
+
 			// it's outside current extremes
 			if (processedXData[dataLength - 1] < min || processedXData[0] > max) {
 				processedXData = [];
@@ -12857,6 +12861,67 @@ Series.prototype = {
 		}
 		series.closestPointRange = closestPointRange;
 
+	},
+
+
+	/**
+	 * http://jsfiddle.net/highcharts/2t8fcf86/
+	 * Simplify data by skipping intermediate points on the same horizontal pixel.
+	 * TODO:
+	 * - Separate, possibly simpler version for columns
+	 * - Disable for log axis
+	 * - Don't apply for less than X data points
+	 */
+	simplifyData: function (xData, yData, min, max) {
+
+		var processedXData = [],
+	    	processedYData = [],
+	        step = Math.floor((max - min) / (2 * this.xAxis.len)), // 2 points per pixel
+	        i = 0,
+	        j,
+	        arr,
+	        min,
+	        max,
+	        xMin,
+	        xMax,
+	        y;
+
+	    while (i < xData.length) {
+	        arr = yData.slice(i, i + step);
+	        j = step;
+	        min = Number.MAX_VALUE;
+	        max = Number.MIN_VALUE;
+	            
+	        while (j--) {
+	            y = arr[j];
+	            if (y < min) {
+	                min = y;
+	                xMin = xData[i + j];
+	            }
+	            if (y > max) {
+	                max = y;
+	                xMax = xData[i + j];
+	            }
+	        }
+	        
+	        if (xMin < xMax) {
+	        	processedXData.push(xMin);
+	        	processedYData.push(min);
+	        }
+	        processedXData.push(xMax);
+	        processedYData.push(max);
+	        if (xMin >= xMax) {
+	        	processedXData.push(xMin);
+	        	processedYData.push(min);
+	        }
+	        i += step;
+	    }
+	    console.log(processedXData.length)
+	    this.hasGroupedData = true; // generate points from processed data
+	    return {
+	    	xData: processedXData,
+	    	yData: processedYData
+	    };
 	},
 
 	/**
