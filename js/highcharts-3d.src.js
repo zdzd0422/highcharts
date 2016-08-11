@@ -314,27 +314,25 @@
                 ['right', [1, 2, 5, 6]],
                 ['left', [0, 7, 4, 3]]
             ],
-            paths;
-
-        // The 8 corners of the cube
-        var pArr = [
-            { x: x, y: y, z: z },
-            { x: x + w, y: y, z: z },
-            { x: x + w, y: y + h, z: z },
-            { x: x, y: y + h, z: z },
-            { x: x, y: y + h, z: z + d },
-            { x: x + w, y: y + h, z: z + d },
-            { x: x + w, y: y, z: z + d },
-            { x: x, y: y, z: z + d }
-        ];
+            paths,
+            // The 8 corners of the cube
+            pArr = [
+                { x: x, y: y, z: z },
+                { x: x + w, y: y, z: z },
+                { x: x + w, y: y + h, z: z },
+                { x: x, y: y + h, z: z },
+                { x: x, y: y + h, z: z + d },
+                { x: x + w, y: y + h, z: z + d },
+                { x: x + w, y: y, z: z + d },
+                { x: x, y: y, z: z + d }
+            ],
+            // helper method to decide which side is visible
+            mapPath = function (i) {
+                return pArr[i];
+            };
 
         // apply perspective
         pArr = perspective(pArr, chart, shapeArgs.insidePlotArea);
-
-        // helper method to decide which side is visible
-        function mapPath(i) {
-            return pArr[i];
-        }
 
         paths = map(sides, function (side) {
             var path = map(side[1], mapPath),
