@@ -80,82 +80,89 @@ Highcharts.SVGRenderer.prototype.toLinePath = function (points, closed) {
 
 ////// CUBOIDS //////
 Highcharts.SVGRenderer.prototype.cuboid = function (shapeArgs) {
-
-	var result = this.g(),
-		paths = this.cuboidPath(shapeArgs);
+	var renderer = this,
+		result = renderer.g(),
+		sides = ['front', 'back', 'top', 'bottom', 'left', 'right'],
+		paths = renderer.cuboidPath(shapeArgs),
+		groupZIndex;
 
 	// create the 3 sides
-	result.front = this.path(paths[0]).attr({ zIndex: paths[3], 'stroke-linejoin': 'round' }).add(result);
-	result.top = this.path(paths[1]).attr({ zIndex: paths[4], 'stroke-linejoin': 'round' }).add(result);
-	result.side = this.path(paths[2]).attr({ zIndex: paths[5], 'stroke-linejoin': 'round' }).add(result);
-
-	// apply the fill everywhere, the top a bit brighter, the side a bit darker
-	result.fillSetter = function (color) {
-		var c0 = color,
-			c1 = Highcharts.Color(color).brighten(0.1).get(),
-			c2 = Highcharts.Color(color).brighten(-0.1).get();
-
-		this.front.attr({ fill: c0 });
-		this.top.attr({ fill: c1 });
-		this.side.attr({ fill: c2 });
-
-		this.color = color;
-		return this;
-	};
-
-	// apply opacaity everywhere
-	result.opacitySetter = function (opacity) {
-		this.front.attr({ opacity: opacity });
-		this.top.attr({ opacity: opacity });
-		this.side.attr({ opacity: opacity });
-		return this;
-	};
-
-	result.attr = function (args) {
-		if (args.shapeArgs || defined(args.x)) {
-			var shapeArgs = args.shapeArgs || args;
-			var paths = this.renderer.cuboidPath(shapeArgs);
-			this.front.attr({ d: paths[0], zIndex: paths[3] });
-			this.top.attr({ d: paths[1], zIndex: paths[4] });
-			this.side.attr({ d: paths[2], zIndex: paths[5] });
-		} else {
-			return Highcharts.SVGElement.prototype.attr.call(this, args); // getter returns value
+	each(paths, function (path, i) {
+		result[path.key] = renderer.path(path.path)
+			.attr({ zIndex: 6 - i, 'stroke-linejoin': 'round', id: path.key })
+			.add(result);
+		if (path.key === 'bottom') {
+			groupZIndex = path.groupZIndex;
 		}
-
-		return this;
-	};
-
-	result.animate = function (args, duration, complete) {
-		if (defined(args.x) && defined(args.y)) {
-			var paths = this.renderer.cuboidPath(args);
-			this.front.attr({ zIndex: paths[3] }).animate({ d: paths[0] }, duration, complete);
-			this.top.attr({ zIndex: paths[4] }).animate({ d: paths[1] }, duration, complete);
-			this.side.attr({ zIndex: paths[5] }).animate({ d: paths[2] }, duration, complete);
-			this.attr({
-				zIndex: -paths[6] // #4774
-			});
-		} else if (args.opacity) {
-			this.front.animate(args, duration, complete);
-			this.top.animate(args, duration, complete);
-			this.side.animate(args, duration, complete);
-		} else {
-			Highcharts.SVGElement.prototype.animate.call(this, args, duration, complete);
-		}
-		return this;
-	};
-
-	// destroy all children
-	result.destroy = function () {
-		this.front.destroy();
-		this.top.destroy();
-		this.side.destroy();
-
-		return null;
-	};
+	});
 
 	// Apply the Z index to the cuboid group
-	result.attr({ zIndex: -paths[6] });
+	result.attr({ zIndex: groupZIndex, id: groupZIndex });
 
+	extend(result, {
+		// apply the fill everywhere, the top a bit brighter, the side a bit darker
+		fillSetter: function (color) {
+			var colors = [color, Highcharts.Color(color).brighten(0.1).get(), Highcharts.Color(color).brighten(-0.1).get()];
+			each(sides, function (key, i) {
+				var j = Math.floor(i / 2);
+				result[key].attr({ fill: colors[j] });
+			});
+
+			this.color = color;
+			return this;
+		},
+		// apply opacaity everywhere
+		opacitySetter: function (opacity) {
+			each(sides, function (key) {
+				result[key].attr({ opacity: opacity });
+			});
+			return this;
+		},
+		attr: function (args) {
+			var shapeArgs = args.shapeArgs || args,
+				paths;
+			if (defined(shapeArgs.x)) {
+				paths = this.renderer.cuboidPath(shapeArgs);
+				each(paths, function (path, i) {
+					result[path.key].attr({ d: path.path, zIndex: 6 - i, id: path.key });
+				});
+			} else {
+				return Highcharts.SVGElement.prototype.attr.call(this, args); // getter returns value
+			}
+
+			return this;
+		},
+		animate: function (args, duration, complete) {
+			var paths,
+				groupZIndex;
+			if (defined(args.x) && defined(args.y)) {
+				paths = this.renderer.cuboidPath(args);
+				each(paths, function (path, i) {
+					result[path.key].attr({ zIndex: 6 - i }).animate({ d: path.path }, duration, complete);
+					if (path.key === 'bottom') {
+						groupZIndex = path.groupZIndex;
+					}
+				});
+				this.attr({	zIndex: groupZIndex }); // #4774
+			} else if (args.opacity) {
+				each(paths, function (path) {
+					result[path.key].animate(args, duration, complete);
+				});
+			} else {
+				Highcharts.SVGElement.prototype.animate.call(this, args, duration, complete);
+			}
+			return this;
+		},
+		// destroy all children
+		destroy: function () {
+			each(sides, function (key) {
+				if (result[key]) {
+					result[key].destroy();
+				}
+			});
+			return null;
+		}
+	});
 	return result;
 };
 
@@ -163,14 +170,24 @@ Highcharts.SVGRenderer.prototype.cuboid = function (shapeArgs) {
  *	Generates a cuboid
  */
 Highcharts.SVGRenderer.prototype.cuboidPath = function (shapeArgs) {
-	var x = shapeArgs.x,
+	var renderer = this,
+		x = shapeArgs.x,
 		y = shapeArgs.y,
 		z = shapeArgs.z,
 		h = shapeArgs.height,
 		w = shapeArgs.width,
 		d = shapeArgs.depth,
 		chart = Highcharts.charts[this.chartIndex],
-		map = Highcharts.map;
+		map = Highcharts.map,
+		sides = [
+			['front', [3, 2, 1, 0]],
+			['back', [7, 6, 5, 4]],
+			['top', [1, 6, 7, 0]],
+			['bottom', [4, 5, 2, 3]],
+			['right', [1, 2, 5, 6]],
+			['left', [0, 7, 4, 3]]
+		],
+		paths;
 
 	// The 8 corners of the cube
 	var pArr = [
@@ -191,34 +208,24 @@ Highcharts.SVGRenderer.prototype.cuboidPath = function (shapeArgs) {
 	function mapPath(i) {
 		return pArr[i];
 	}
-	var pickShape = function (path1, path2) {
-		var ret = [];
-		path1 = map(path1, mapPath);
-		path2 = map(path2, mapPath);
-		if (shapeArea(path1) < 0) {
-			ret = path1;
-		} else if (shapeArea(path2) < 0) {
-			ret = path2;
+
+	paths = map(sides, function (side) {
+		var path = map(side[1], mapPath),
+			obj = {
+				key: side[0],
+				pathArray: path,
+				path: renderer.toLinePath(path, true)
+			};
+		if (obj.key === 'bottom') {
+			obj.groupZIndex = -averageZ(path) * 9e9;
 		}
-		return ret;
-	};
-
-	// front or back
-	var front = [3, 2, 1, 0];
-	var back = [7, 6, 5, 4];
-	var path1 = pickShape(front, back);
-
-	// top or bottom
-	var top = [1, 6, 7, 0];
-	var bottom = [4, 5, 2, 3];
-	var path2 = pickShape(top, bottom);
-
-	// side
-	var right = [1, 2, 5, 6];
-	var left = [0, 7, 4, 3];
-	var path3 = pickShape(right, left);
-
-	return [this.toLinePath(path1, true), this.toLinePath(path2, true), this.toLinePath(path3, true), averageZ(path1), averageZ(path2), averageZ(path3), averageZ(map(bottom, mapPath)) * 9e9]; // #4774
+		return obj;
+	}).sort(function (a, b) {
+		var a1 = shapeArea(a.pathArray),
+			b1 = shapeArea(b.pathArray);
+		return a1 - b1;
+	});
+	return paths;
 };
 
 ////// SECTORS //////
