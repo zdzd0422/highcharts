@@ -232,7 +232,7 @@ function getExportInnerHTML() {
 
 		<link rel="stylesheet" type="text/css" href="style.css"/>
 		<style type="text/css">
-			<?php 
+			<?php
 			$css = @file_get_contents("$path/demo.css");
 
 			// Highchart 5 preview
@@ -306,7 +306,7 @@ function getExportInnerHTML() {
 						// Compare chart objects
 						if (chart) {
 							clearInterval(interval);
-							
+
 							// Automatically click buttons with classname "autocompare"
 							tryToRun(function () {
 								$('.autocompare').click();

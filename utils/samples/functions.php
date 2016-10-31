@@ -2,7 +2,16 @@
 
 require_once('../issue-by-commit/Git.php');
 require_once('../settings.php');
-define('JQUERY_VERSION', isset($_SESSION['jQueryVersion']) ? $_SESSION['jQueryVersion'] : Settings::$jQueryVersion);
+define('STATIC_JQUERY_VERSION', isset($_SESSION['JQUERY_VERSION']) ? $_SESSION['JQUERY_VERSION'] : Settings::$jQueryVersion);
+
+// Get
+$ie6 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 6") !== false;
+$ie7 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 7") !== false;
+$ie8 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 8") !== false;
+
+// Define the fallback version for old IE browsers.
+// Change the version number for jQuery here to update for these old browsers.
+define('JQUERY_VERSION', ($ie6 || $ie7 || $ie8) ? '1.11.3' : STATIC_JQUERY_VERSION);
 
 
 function getBranch() {
@@ -15,7 +24,7 @@ function getBranch() {
     } catch (Exception $e) {
         echo $e->getMessage();
     }
-        
+
 }
 
 function compareJSON() {
@@ -25,13 +34,13 @@ function compareJSON() {
 /**
  * getBrowser function from http://php.net/manual/en/function.get-browser.php#101125
  */
-function getBrowser() { 
-    $u_agent = $_SERVER['HTTP_USER_AGENT']; 
+function getBrowser() {
+    $u_agent = $_SERVER['HTTP_USER_AGENT'];
     $bname = 'Unknown';
     $platform = 'Unknown';
     $version= "";
     $ub = "";
-    
+
     //First get the platform?
     if (preg_match('/linux/i', $u_agent)) {
         $platform = 'linux';
@@ -44,41 +53,41 @@ function getBrowser() {
     }
 
     // Next get the name of the useragent yes seperately and for good reason
-    if(preg_match('/MSIE/i',$u_agent) && !preg_match('/Opera/i',$u_agent)) 
-    { 
-        $bname = 'Internet Explorer'; 
-        $ub = "MSIE"; 
-    } 
-    elseif(preg_match('/Firefox/i',$u_agent)) 
-    { 
-        $bname = 'Mozilla Firefox'; 
-        $ub = "Firefox"; 
-    } 
-    elseif(preg_match('/Chrome/i',$u_agent)) 
-    { 
-        $bname = 'Google Chrome'; 
-        $ub = "Chrome"; 
-    } 
-    elseif(preg_match('/PhantomJS/i',$u_agent)) 
-    { 
-        $bname = 'PhantomJS'; 
-        $ub = "PhantomJS"; 
-    } 
-    elseif(preg_match('/Safari/i',$u_agent)) 
-    { 
-        $bname = 'Apple Safari'; 
-        $ub = "Safari"; 
-    } 
-    elseif(preg_match('/Opera/i',$u_agent)) 
-    { 
-        $bname = 'Opera'; 
-        $ub = "Opera"; 
-    } 
-    elseif(preg_match('/Netscape/i',$u_agent)) 
-    { 
-        $bname = 'Netscape'; 
-        $ub = "Netscape"; 
-    } 
+    if(preg_match('/MSIE/i',$u_agent) && !preg_match('/Opera/i',$u_agent))
+    {
+        $bname = 'Internet Explorer';
+        $ub = "MSIE";
+    }
+    elseif(preg_match('/Firefox/i',$u_agent))
+    {
+        $bname = 'Mozilla Firefox';
+        $ub = "Firefox";
+    }
+    elseif(preg_match('/Chrome/i',$u_agent))
+    {
+        $bname = 'Google Chrome';
+        $ub = "Chrome";
+    }
+    elseif(preg_match('/PhantomJS/i',$u_agent))
+    {
+        $bname = 'PhantomJS';
+        $ub = "PhantomJS";
+    }
+    elseif(preg_match('/Safari/i',$u_agent))
+    {
+        $bname = 'Apple Safari';
+        $ub = "Safari";
+    }
+    elseif(preg_match('/Opera/i',$u_agent))
+    {
+        $bname = 'Opera';
+        $ub = "Opera";
+    }
+    elseif(preg_match('/Netscape/i',$u_agent))
+    {
+        $bname = 'Netscape';
+        $ub = "Netscape";
+    }
 
     // finally get the correct version number
     $known = array('Version', $ub, 'other');
@@ -115,16 +124,15 @@ function getBrowser() {
         'pattern'   => $pattern,
         'parent'    => $bname . ' ' . $version
     );
-} 
+}
 
 
 
 function getFramework($framework) {
-
 	if ($framework === 'standalone') {
 		return '
 			<script src="http://code.highcharts.local/adapters/standalone-framework.src.js"></script>
-			<script src="http://code.jquery.com/jquery-1.7.2.js"></script>
+			<script src="http://code.jquery.com/jquery-' . JQUERY_VERSION . '.js"></script>
 			<script>
 			/**
 			 * Register Highcharts as a plugin in the respective framework
@@ -138,7 +146,7 @@ function getFramework($framework) {
 
 				if (typeof args[0] === "string") {
 					constr = args[0];
-					args = Array.prototype.slice.call(args, 1); 
+					args = Array.prototype.slice.call(args, 1);
 				}
 				options = args[0];
 
@@ -153,7 +161,7 @@ function getFramework($framework) {
 				// When called without parameters or with the return argument, get a predefined chart
 				if (options === undefined) {
 					ret = Highcharts.charts[attr(this[0], "data-highcharts-chart")];
-				}	
+				}
 
 				return ret;
 			};

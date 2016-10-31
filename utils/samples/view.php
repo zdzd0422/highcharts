@@ -2,7 +2,7 @@
 
 session_start();
 
-define('FRAMEWORK', 'jQuery');
+define('FRAMEWORK');
 
 require_once('functions.php');
 
@@ -26,6 +26,12 @@ $httpHost = $_SERVER['HTTP_HOST'];
 $httpHost = explode('.', $httpHost);
 $topDomain = $httpHost[sizeof($httpHost) - 1];
 
+$browser = getBrowser();
+
+$ie6 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 6") !== false;
+$ie7 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 7") !== false;
+$ie8 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 8") !== false;
+$jsFiddleJqueryVersion = ($ie6 || $ie7 || $ie8) ? '1' : '3';
 
 // Get HTML and use dev server
 ob_start();
@@ -61,7 +67,7 @@ if ($styled) {
 
 // Handle themes
 if (isset($_POST['theme'])) {
-	$_SESSION['theme'] = $_POST['theme'];	
+	$_SESSION['theme'] = $_POST['theme'];
 }
 if (@$_SESSION['theme']) {
 	$html .= "<script src='http://code.highcharts.$topDomain/themes/". $_SESSION['theme'] .".js'></script>";
@@ -135,20 +141,18 @@ function getResources() {
 
 			if (typeof $ === 'undefined') {
 				window.onload = function () {
-					document.getElementById('container').innerHTML = 
+					document.getElementById('container').innerHTML =
 						'<div style="margin-top: 150px; text-align: center"><h3 style="font-size: 2em; color: red">' +
 						'jQuery is missing</h3><p>Check your settings in <code>settings.php</code>.</div>';
 				};
 				return;
 			}
 
-			
+
 			$(function() {
-
-
 				if (typeof Highcharts === 'undefined' && !document.getElementById('container')) {
 					window.onload = function () {
-						document.body.innerHTML = 
+						document.body.innerHTML =
 							'<div style="margin-top: 150px; text-align: center"><h3 style="font-size: 2em; color: red">' +
 							'Highcharts and container are missing</h3><p>Most likely this sample does not exist.</div>';
 					};
@@ -162,7 +166,7 @@ function getResources() {
 				if (window.parent.frames[0]) {
 
 					window.parent.history.pushState(null, null, '#view/' + path);
-					
+
 					var contentDoc = window.parent.frames[0].document;
 
 					sampleIndex = window.parent.frames[0].samples.indexOf(path);
@@ -186,7 +190,7 @@ function getResources() {
 
 					// add the next button
 					if (contentDoc.getElementById('i' + (sampleIndex + 1))) {
-						
+
 						$('#next').click(function() {
 							next();
 						});
@@ -201,7 +205,7 @@ function getResources() {
 					$(this).toggleClass('active');
 
 					checked = $(this).hasClass('active')
-					
+
 					$('#source-box').css({
 						width: checked ? '50%' : 0
 					});
@@ -250,12 +254,12 @@ function getResources() {
 		}
 
 
-		// Wrappers for recording mouse events in order to write automatic tests 
-		
+		// Wrappers for recording mouse events in order to write automatic tests
+
 		$(function () {
 
 			$(window).bind('keydown', parent.keyDown);
-			
+
 			var checkbox = $('#record')[0],
 				pre = $('pre#recording')[0];
 			if (typeof Highcharts !== 'undefined') {
@@ -263,8 +267,8 @@ function getResources() {
 					if (checkbox.checked) {
 						pre.innerHTML += "chart.pointer.onContainerMouseDown({\n"+
 							"    type: 'mousedown',\n" +
-							"    pageX: " + e.pageX + ",\n" + 
-							"    pageY: " + e.pageY + "\n" + 
+							"    pageX: " + e.pageX + ",\n" +
+							"    pageY: " + e.pageY + "\n" +
 							"});\n\n";
 					}
 					return proceed.call(this, e);
@@ -273,9 +277,9 @@ function getResources() {
 					if (checkbox.checked) {
 						pre.innerHTML += "chart.pointer.onContainerMouseMove({\n"+
 							"    type: 'mousemove',\n" +
-							"    pageX: " + e.pageX + ",\n" + 
-							"    pageY: " + e.pageY + ",\n" +  
-							"    target: chart.container\n" + 
+							"    pageX: " + e.pageX + ",\n" +
+							"    pageY: " + e.pageY + ",\n" +
+							"    target: chart.container\n" +
 							"});\n\n";
 					}
 					return proceed.call(this, e);
@@ -283,14 +287,14 @@ function getResources() {
 				Highcharts.wrap(Highcharts.Pointer.prototype, 'onDocumentMouseUp', function (proceed, e) {
 					if (checkbox.checked) {
 						pre.innerHTML += "chart.pointer.onContainerMouseMove({\n"+
-							"    type: 'mouseup'\n" + 
+							"    type: 'mouseup'\n" +
 							"});\n\n";
 					}
 					return proceed.call(this, e);
 				});
 			}
 		});
-		
+
 
 		<?php if (@$_GET['profile']) : ?>
 		$(function () {
@@ -303,7 +307,7 @@ function getResources() {
 					if (window.console && console.profileEnd) {
 						console.profile('<?php echo $path ?>');
 					}
-					
+
 					chart = proceed.apply(this, Array.prototype.slice.call(arguments, 1));
 
 					if (window.console && console.profileEnd) {
@@ -338,7 +342,7 @@ function getResources() {
 					} else if (window.console) {
 						console.log('<?php echo $path ?>: ' + (new Date() - start) + 'ms');
 					}
-					
+
 				 	return chart;
 
 				});
@@ -374,7 +378,7 @@ function getResources() {
 			});
 		});
 		<?php } ?>
-		
+
 
 		<?php @include("$fullpath/demo.js"); ?>
 		</script>
@@ -418,20 +422,19 @@ function getResources() {
 				<a class="button"
 					href="view.php?path=<?php echo $path ?>&amp;time=1">Time</a>
 				<a class="button"
-					href="http://jsfiddle.net/gh/get/jquery/1.7.2/highcharts/highcharts/tree/master/samples/<?php echo $path ?>/"
+					href="http://jsfiddle.net/gh/get/jquery/<?php echo $jsFiddleJqueryVersion ?>/highcharts/highcharts/tree/master/samples/<?php echo $path ?>/"
 					target="_blank">jsFiddle</a>
 
 				<a id="view-source" class="button" href="javascript:;">View source</a>
-				
+
 				<input id="record" type="checkbox" />
 				<label for="record" title="Record calls to Pointer mouse events that can be added to test.js for automatic testing of tooltip and other mouse operations">Record mouse</label>
-				
+
 			</div>
 		</div>
 		<div id="source-box"></div>
 		<div id="main-content">
 			<div style="margin: 1em">
-
 			<?php echo $html ?>
 			</div>
 			<hr/>
@@ -471,7 +474,7 @@ ob_start();
 
 	</body>
 </html>
-<?php 
+<?php
 $draft = ob_get_clean();
 $draft = str_replace('cache.php?file=', '', $draft);
 file_put_contents('../draft/index.html', $draft);

@@ -9,6 +9,14 @@
 $products = array('highcharts', 'maps', 'stock');
 $samplesDir = '';
 
+// version checker for Internet Explorer
+$ie6 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 6") !== false;
+$ie7 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 7") !== false;
+$ie8 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 8") !== false;
+
+// sets jquery version for browser
+$jqueryVersion = ($ie6 || $ie7 || $ie8) ? '1' : '3';
+
 foreach ($products as $dir) {
 	if ($handle = opendir($samplesDir . $dir)) {
 
@@ -33,7 +41,7 @@ foreach ($products as $dir) {
 							<li>
 								$innerFile
 								(<a href='view.php?path=$path'>view</a>,
-								<a href='http://jsfiddle.net/gh/get/jquery/3/highcharts/highcharts/tree/master/samples/$path/'>fiddle</a>)
+								<a href='http://jsfiddle.net/gh/get/jquery/<?php echo $jqueryVersion ?>/highcharts/highcharts/tree/master/samples/$path/'>fiddle</a>)
 							</li>
 							";
 						}
