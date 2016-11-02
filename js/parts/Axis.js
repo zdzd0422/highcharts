@@ -2115,7 +2115,6 @@ H.Axis.prototype = {
 
 	/**
 	 * Render the axis line
-	 * @returns {[type]} [description]
 	 */
 	renderLine: function () {
 		if (!this.axisLine) {
