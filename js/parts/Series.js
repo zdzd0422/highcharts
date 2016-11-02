@@ -1219,10 +1219,13 @@ H.Series = H.seriesType('line', null, { // base series options
 			pointOptions = point && point.options,
 			pointMarkerOptions = (pointOptions && pointOptions.marker) || {},
 			pointStateOptions,
-			strokeWidth = seriesMarkerOptions.lineWidth,
 			color = this.color,
 			pointColorOption = pointOptions && pointOptions.color,
 			pointColor = point && point.color,
+			strokeWidth = pick(
+				pointMarkerOptions.lineWidth,
+				seriesMarkerOptions.lineWidth
+			),
 			zoneColor,
 			fill,
 			stroke,
@@ -1243,7 +1246,15 @@ H.Series = H.seriesType('line', null, { // base series options
 		if (state) {
 			seriesStateOptions = seriesMarkerOptions.states[state];
 			pointStateOptions = (pointMarkerOptions.states && pointMarkerOptions.states[state]) || {};
-			strokeWidth = seriesStateOptions.lineWidth || strokeWidth + seriesStateOptions.lineWidthPlus;
+			strokeWidth = pick(
+				pointStateOptions.lineWidth, 
+				seriesStateOptions.lineWidth, 
+				strokeWidth + pick(
+					pointStateOptions.lineWidthPlus, 
+					seriesStateOptions.lineWidthPlus,
+					0
+				)
+			);
 			fill = pointStateOptions.fillColor || seriesStateOptions.fillColor || fill;
 			stroke = pointStateOptions.lineColor || seriesStateOptions.lineColor || stroke;
 		}
