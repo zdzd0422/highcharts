@@ -644,7 +644,7 @@ Legend.prototype = {
 
 
 		// Adjust the height
-		if (options.layout === 'horizontal') {
+		if (options.layout === 'horizontal' && options.verticalAlign !== 'middle' && !options.floating) {
 			spaceHeight /= 2;
 		}
 		if (maxHeight) {
