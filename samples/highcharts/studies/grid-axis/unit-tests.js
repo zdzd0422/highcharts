@@ -4,7 +4,7 @@
 QUnit.test('isOuterAxis()', function (assert) {
     var chart;
 
-    Highcharts.chart('container', {
+    chart = Highcharts.chart('container', {
         chart: {
             type: 'bar'
         },
@@ -45,8 +45,6 @@ QUnit.test('isOuterAxis()', function (assert) {
             xAxis: 3
         }]
     });
-
-    chart = $('#container').highcharts();
 
     assert.ok(
         chart.xAxis[1].isOuterAxis(),

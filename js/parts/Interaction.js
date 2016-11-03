@@ -356,7 +356,7 @@ extend(Chart.prototype, {
 					isXAxis = axis.isXAxis;
 
 				// don't zoom more than minRange
-				if (pointer[isXAxis ? 'zoomX' : 'zoomY'] || pointer[isXAxis ? 'pinchX' : 'pinchY']) {
+				if (pointer[isXAxis ? 'zoomX' : 'zoomY']) {
 					hasZoomed = axis.zoom(axisData.min, axisData.max);
 					if (axis.displayBtn) {
 						displayButton = true;
@@ -566,6 +566,7 @@ extend(Point.prototype, {
 			halo = series.halo,
 			haloOptions,
 			markerAttribs,
+			hasMarkers = markerOptions && series.markerAttribs,
 			newSymbol;
 
 		state = state || ''; // empty string
@@ -586,7 +587,7 @@ extend(Point.prototype, {
 			return;
 		}
 
-		if (markerOptions) {
+		if (hasMarkers) {
 			markerAttribs = series.markerAttribs(point, state);
 		}
 
@@ -615,7 +616,11 @@ extend(Point.prototype, {
 			if (markerAttribs) {
 				point.graphic.animate(
 					markerAttribs,
-					pick(markerStateOptions.animation, markerOptions.animation)
+					pick(
+						chart.options.chart.animation, // Turn off globally
+						markerStateOptions.animation,
+						markerOptions.animation
+					)
 				);
 			}
 
@@ -674,7 +679,8 @@ extend(Point.prototype, {
 		if (haloOptions && haloOptions.size) {
 			if (!halo) {
 				series.halo = halo = chart.renderer.path()
-					.add(series.markerGroup || series.group);
+					// #5818, #5903
+					.add(hasMarkers ? series.markerGroup : series.group);
 			}
 			H.stop(halo);
 			halo[move ? 'animate' : 'attr']({
@@ -685,11 +691,11 @@ extend(Point.prototype, {
 			});
 
 			/*= if (build.classic) { =*/
-			halo.attr({
+			halo.attr(extend({
 				'fill': point.color || series.color,
 				'fill-opacity': haloOptions.opacity,
 				'zIndex': -1 // #4929, IE8 added halo above everything
-			});
+			}, haloOptions.attributes));
 			/*= } =*/
 		} else if (halo) {
 			halo.animate({ d: point.haloPath(0) }); // Hide
@@ -705,13 +711,11 @@ extend(Point.prototype, {
 	 */
 	haloPath: function (size) {
 		var series = this.series,
-			chart = series.chart,
-			inverted = chart.inverted,
-			plotX = Math.floor(this.plotX);
+			chart = series.chart;
 
 		return chart.renderer.symbols.circle(
-			(inverted ? series.yAxis.len - this.plotY : plotX) - size,
-			(inverted ? series.xAxis.len - plotX : this.plotY) - size,
+			Math.floor(this.plotX) - size,
+			this.plotY - size,
 			size * 2, 
 			size * 2
 		);

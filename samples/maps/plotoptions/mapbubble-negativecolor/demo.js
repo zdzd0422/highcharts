@@ -3,7 +3,7 @@ $(function () {
     $.getJSON('https://www.highcharts.com/samples/data/jsonp.php?filename=world-population.json&callback=?', function (data) {
 
         Highcharts.mapChart('container', {
-            chart : {
+            chart: {
                 borderWidth: 1,
                 map: 'custom/world'
             },

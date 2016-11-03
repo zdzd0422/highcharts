@@ -10,7 +10,7 @@ $(function () {
         });
 
         Highcharts.mapChart('container', {
-            chart : {
+            chart: {
                 borderWidth: 1,
                 map: 'custom/world'
             },

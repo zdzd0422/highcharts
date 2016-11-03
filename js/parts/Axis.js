@@ -437,7 +437,10 @@ H.Axis.prototype = {
 			value = this.value,
 			categories = axis.categories,
 			dateTimeLabelFormat = this.dateTimeLabelFormat,
-			numericSymbols = defaultOptions.lang.numericSymbols,
+			lang = defaultOptions.lang,
+			numericSymbols = lang.numericSymbols,
+			// docs: new option, added to API. Add it to the I18n article too.
+			numSymMagnitude = lang.numericSymbolMagnitude || 1000,
 			i = numericSymbols && numericSymbols.length,
 			multi,
 			ret,
@@ -460,7 +463,7 @@ H.Axis.prototype = {
 			// If we are to enable this in tooltip or other places as well, we can move this
 			// logic to the numberFormatter and enable it by a parameter.
 			while (i-- && ret === undefined) {
-				multi = Math.pow(1000, i + 1);
+				multi = Math.pow(numSymMagnitude, i + 1);
 				if (numericSymbolDetector >= multi && (value * 10) % multi === 0 && numericSymbols[i] !== null && value !== 0) { // #5480
 					ret = H.numberFormat(value / multi, -1) + numericSymbols[i];
 				}
@@ -607,11 +610,9 @@ H.Axis.prototype = {
 			if (doPostTranslate) { // log and ordinal axes
 				val = axis.val2lin(val);
 			}
-			if (pointPlacement === 'between') {
-				pointPlacement = 0.5;
-			}
-			returnValue = sign * (val - localMin) * localA + cvsOffset + (sign * minPixelPadding) +
-				(isNumber(pointPlacement) ? localA * pointPlacement * axis.pointRange : 0);
+			returnValue = sign * (val - localMin) * localA + cvsOffset +
+				(sign * minPixelPadding) +
+				(isNumber(pointPlacement) ? localA * pointPlacement : 0);
 		}
 
 		return returnValue;
@@ -891,7 +892,7 @@ H.Axis.prototype = {
 		point.series.requireSorting = false;
 
 		if (!defined(nameX)) {
-			nameX = this.options.uniqueNames === false ? // docs: renamed nameToX
+			nameX = this.options.uniqueNames === false ?
 				point.series.autoIncrement() : 
 				inArray(point.name, names);
 		}
@@ -1137,12 +1138,12 @@ H.Axis.prototype = {
 		// Handle options for floor, ceiling, softMin and softMax
 		if (isNumber(options.floor)) {
 			axis.min = Math.max(axis.min, options.floor);
-		} else if (isNumber(options.softMin)) { // docs. API added as next
+		} else if (isNumber(options.softMin)) {
 			axis.min = Math.min(axis.min, options.softMin);
 		}
 		if (isNumber(options.ceiling)) {
 			axis.max = Math.min(axis.max, options.ceiling);
-		} else if (isNumber(options.softMax)) { // docs. API added as next
+		} else if (isNumber(options.softMax)) {
 			axis.max = Math.max(axis.max, options.softMax);
 		}
 
@@ -2115,7 +2116,6 @@ H.Axis.prototype = {
 
 	/**
 	 * Render the axis line
-	 * @returns {[type]} [description]
 	 */
 	renderLine: function () {
 		if (!this.axisLine) {
@@ -2381,6 +2381,10 @@ H.Axis.prototype = {
 
 	},
 
+	// Properties to survive after destroy, needed for Axis.update (#4317,
+	// #5773, #5881).
+	keepProps: ['extKey', 'hcEvents', 'names', 'series', 'userMax', 'userMin'],
+	
 	/**
 	 * Destroys an Axis instance.
 	 */
@@ -2390,8 +2394,7 @@ H.Axis.prototype = {
 			stackKey,
 			plotLinesAndBands = axis.plotLinesAndBands,
 			i,
-			n,
-			keepProps;
+			n;
 
 		// Remove the events
 		if (!keepEvents) {
@@ -2423,12 +2426,9 @@ H.Axis.prototype = {
 			}
 		});
 
-
 		// Delete all properties and fall back to the prototype.
-		// Preserve some properties, needed for Axis.update (#4317, #5773).
-		keepProps = ['extKey', 'hcEvents', 'names', 'series', 'userMax', 'userMin'];
 		for (n in axis) {
-			if (axis.hasOwnProperty(n) && inArray(n, keepProps) === -1) {
+			if (axis.hasOwnProperty(n) && inArray(n, axis.keepProps) === -1) {
 				delete axis[n];
 			}
 		}
@@ -2474,7 +2474,7 @@ H.Axis.prototype = {
 			if (defined(pos)) {
 				path = this.getPlotLinePath(
 					// First argument, value, only used on radial
-					this.isXAxis ? point.x : pick(point.stackY, point.y),
+					point && (this.isXAxis ? point.x : pick(point.stackY, point.y)),
 					null,
 					null,
 					null,
