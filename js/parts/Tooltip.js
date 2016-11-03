@@ -253,8 +253,8 @@ H.Tooltip.prototype = {
 				this.shared && !inverted && points.length > 1 && mouseEvent ?
 					mouseEvent.chartY - plotTop : // place shared tooltip next to the mouse (#424)
 					inverted ? chart.plotHeight - plotX : plotY
-			];
-		}
+			]
+;		}
 
 		return map(ret, Math.round);
 	},
@@ -466,7 +466,7 @@ H.Tooltip.prototype = {
 				this.renderSplit(text, chart.hoverPoints);
 			} else {
 				label.attr({
-					text: text.join ? text.join('') : text
+					text: text && text.join ? text.join('') : text
 				});
 
 				// Set the stroke color of the box to reflect the point
