@@ -48,7 +48,7 @@ H.StockChart = H.stockChart = function (a, b, c) {
 	var hasRenderToArg = isString(a) || a.nodeName,
 		options = arguments[hasRenderToArg ? 1 : 0],
 		seriesOptions = options.series, // to increase performance, don't merge the data
-        defaultOptions = H.getOptions(),
+		defaultOptions = H.getOptions(),
 		opposite,
 
 		// Always disable startOnTick:true on the main axis when the navigator is enabled (#1090)

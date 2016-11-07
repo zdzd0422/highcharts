@@ -43,7 +43,8 @@ var addEvent = H.addEvent,
 	Tick = H.Tick;
 	
 /**
- * Create a new axis object
+ * Create a new axis object.
+ * @constructor Axis
  * @param {Object} chart
  * @param {Object} options
  */
@@ -921,6 +922,9 @@ H.Axis.prototype = {
 			this.minRange = undefined;
 			each(this.series || [], function (series) {
 			
+				// Reset incrementer (#5928)
+				series.xIncrement = null;
+
 				// When adding a series, points are not yet generated
 				if (!series.points || series.isDirtyData) {
 					series.processData();

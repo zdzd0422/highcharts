@@ -334,15 +334,46 @@ gulp.task('nightly', function () {
 
 /**
  * Automated generation for internal API docs.
+ * Run with --watch argument to watch for changes in the JS files.
  */
 gulp.task('jsdoc', function (cb) {
     const jsdoc = require('gulp-jsdoc3');
-    gulp.src(['README.md', './code/highcharts.src.js'], { read: false })
+    gulp.src(['README.md', './js/parts/*.js'], { read: false })
         .pipe(jsdoc({
+            navOptions: {
+                theme: 'highsoft'
+            },
             opts: {
-                destination: './internal-docs/'
+                destination: './internal-docs/',
+                private: true
+            },
+            plugins: [
+                'plugins/markdown'
+            ],
+            templates: {
+                default: {
+                    staticFiles: {
+                        include: [
+                            './tools/jsdoc/static'
+                        ]
+                    }
+                },
+                logoFile: 'img/highcharts-logo.svg',
+                systemName: 'Highcharts',
+                theme: 'highsoft'
             }
-        }, cb));
+        }, function (err) {
+            cb(err); // eslint-disable-line
+            if (!err) {
+                console.log(
+                    colors.green('Wrote JSDoc to ./internal-docs/index.html')
+                );
+            }
+        }));
+
+    if (argv.watch) {
+        gulp.watch(['./js/!(adapters|builds)/*.js'], ['jsdoc']);
+    }
 });
 
 gulp.task('filesize', function () {
@@ -714,7 +745,7 @@ gulp.task('download-api', downloadAllAPI);
  * Create distribution files
  */
 gulp.task('dist', () => {
-    //return gulpify('cleanCode', cleanCode)()
+    // return gulpify('cleanCode', cleanCode)()
     //    .then(gulpify('styles', styles))
     return gulpify('styles', styles)()
         .then(gulpify('scripts', scripts))

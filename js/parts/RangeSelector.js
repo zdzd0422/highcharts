@@ -25,7 +25,6 @@ var addEvent = H.addEvent,
 	merge = H.merge,
 	pick = H.pick,
 	pInt = H.pInt,
-	removeEvent = H.removeEvent,
 	splat = H.splat,
 	wrap = H.wrap;
 		
@@ -68,7 +67,8 @@ defaultOptions.lang = merge(defaultOptions.lang, {
 });
 
 /**
- * The object constructor for the range selector
+ * The range selector.
+ * @class
  * @param {Object} chart
  */
 function RangeSelector(chart) {
@@ -114,7 +114,7 @@ RangeSelector.prototype = {
 
 		// Set the fixed range before range is altered
 		chart.fixedRange = range;
-
+		
 		// Apply dataGrouping associated to button
 		if (dataGrouping) {
 			this.forcedDataGrouping = true;
@@ -267,7 +267,7 @@ RangeSelector.prototype = {
 			options = chart.options.rangeSelector,
 			buttonOptions = options.buttons || [].concat(rangeSelector.defaultButtons),
 			selectedOption = options.selected,
-			blurInputs = rangeSelector.blurInputs = function () {
+			blurInputs = function () {
 				var minInput = rangeSelector.minInput,
 					maxInput = rangeSelector.maxInput;
 				if (minInput && minInput.blur) { //#3274 in some case blur is not defined
@@ -285,8 +285,8 @@ RangeSelector.prototype = {
 		chart.extraTopMargin = options.height;
 		rangeSelector.buttonOptions = buttonOptions;
 
-		addEvent(chart.container, 'mousedown', blurInputs);
-		addEvent(chart, 'resize', blurInputs);
+		this.unMouseDown = addEvent(chart.container, 'mousedown', blurInputs);
+		this.unResize = addEvent(chart, 'resize', blurInputs);
 
 		// Extend the buttonOptions with actual range
 		each(buttonOptions, rangeSelector.computeButtonRange);
@@ -754,12 +754,10 @@ RangeSelector.prototype = {
 	destroy: function () {
 		var minInput = this.minInput,
 			maxInput = this.maxInput,
-			chart = this.chart,
-			blurInputs = this.blurInputs,
 			key;
 
-		removeEvent(chart.container, 'mousedown', blurInputs);
-		removeEvent(chart, 'resize', blurInputs);
+		this.unMouseDown();
+		this.unResize();
 
 		// Destroy elements in collections
 		destroyObjectProperties(this.buttons);
@@ -817,6 +815,14 @@ Axis.prototype.toFixedRange = function (pxMin, pxMax, fixedMin, fixedMax) {
 	};
 };
 
+/**
+ * Get the axis min value based on the range option and the current max. For
+ * stock charts this is extended via the {@link RangeSelector} so that if the
+ * selected range is a multiple of months or years, it is compensated for
+ * various month lengths.
+ * 
+ * @return {number} The new minimum value.
+ */
 Axis.prototype.minFromRange = function () {
 	var rangeOptions = this.range,
 		type = rangeOptions.type,
@@ -833,10 +839,13 @@ Axis.prototype.minFromRange = function () {
 		};
 
 	if (isNumber(rangeOptions)) {
-		min = this.max - rangeOptions;
+		min = max - rangeOptions;
 		range = rangeOptions;
 	} else {
 		min = max + getTrueRange(max, -rangeOptions.count);
+
+		// Let the fixedRange reflect initial settings (#5930)
+		this.chart.fixedRange = max - min;
 	}
 
 	dataMin = pick(this.dataMin, Number.MIN_VALUE);

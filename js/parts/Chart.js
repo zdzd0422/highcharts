@@ -45,10 +45,13 @@ var addEvent = H.addEvent,
 	win = H.win,
 	Renderer = H.Renderer;
 /**
- * The Chart class
- * @param {String|Object} renderTo The DOM element to render to, or its id
- * @param {Object} options
- * @param {Function} callback Function to run when the chart has loaded
+ * The Chart class.
+ * @class Highcharts.Chart
+ * @memberOf Highcharts
+ * @param {String|HTMLDOMElement} renderTo - The DOM element to render to, or its
+ * id.
+ * @param {ChartOptions} options - The chart options structure.
+ * @param {Function} callback - Function to run when the chart has loaded.
  */
 var Chart = H.Chart = function () {
 	this.getArgs.apply(this, arguments);
@@ -636,7 +639,7 @@ Chart.prototype = {
 			indexAttrName = 'data-highcharts-chart',
 			oldChartIndex,
 			Ren,
-			containerId = 'highcharts-' + H.idCounter++,
+			containerId = H.uniqueKey(),
 			containerStyle,
 			key;
 
@@ -829,15 +832,12 @@ Chart.prototype = {
 	 */
 	initReflow: function () {
 		var chart = this,
-			reflow = function (e) {
-				chart.reflow(e);
-			};
-			
+			unbind;
 		
-		addEvent(win, 'resize', reflow);
-		addEvent(chart, 'destroy', function () {
-			removeEvent(win, 'resize', reflow);
+		unbind = addEvent(win, 'resize', function (e) {
+			chart.reflow(e);
 		});
+		addEvent(chart, 'destroy', unbind);
 
 		// The following will add listeners to re-fit the chart before and after
 		// printing (#2284). However it only works in WebKit. Should have worked
