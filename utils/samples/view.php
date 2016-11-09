@@ -26,6 +26,11 @@ $httpHost = $_SERVER['HTTP_HOST'];
 $httpHost = explode('.', $httpHost);
 $topDomain = $httpHost[sizeof($httpHost) - 1];
 
+// Check if you have Internet Explorer 6, 7 or 8, and sets the prefered jQuery version for jsFiddle
+$ie6 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 6") !== false;
+$ie7 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 7") !== false;
+$ie8 = strpos($_SERVER["HTTP_USER_AGENT"], "MSIE 8") !== false;
+$jsFiddleJqueryVersion = ($ie6 || $ie7 || $ie8) ? '1' : '3';
 
 // Get HTML and use dev server
 ob_start();
@@ -421,7 +426,7 @@ function getResources() {
 				<a class="button"
 					href="view.php?path=<?php echo $path ?>&amp;time=1">Time</a>
 				<a class="button"
-					href="http://jsfiddle.net/gh/get/jquery/1.7.2/highcharts/highcharts/tree/master/samples/<?php echo $path ?>/"
+					href="http://jsfiddle.net/gh/get/jquery/<?php echo $jsFiddleJqueryVersion ?>/highcharts/highcharts/tree/master/samples/<?php echo $path ?>/"
 					target="_blank">jsFiddle</a>
 
 				<a id="view-source" class="button" href="javascript:;">View source</a>
