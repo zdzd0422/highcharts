@@ -108,7 +108,7 @@ SVGElement.prototype = {
 	/**
 	 * Animate to given attributes or CSS properties.
 	 * 
-	 * @param {Object} params SVG attrubutes or CSS to animate.
+	 * @param {SVGAttributes} params SVG attributes or CSS to animate.
 	 * @param {AnimationOptions} [options] Animation options.
 	 * @param {Function} [complete] Function to perform at the end of animation.
 	 * @returns {SVGElement} Returns the SVGElement for chaining.
@@ -376,9 +376,23 @@ SVGElement.prototype = {
 	},
 
 	/**
-	 * Apply attributes to the SVG elements. These attributes for the most parts
-	 * correspond to SVG, but some are specific to Highcharts, like `zIndex`,
-	 * `rotation`, `translateX`, `translateY`, `scaleX` and `scaleY`.
+	 *
+	 * @typedef {Object} SVGAttributes An object of key-value pairs for SVG
+	 *   attributes. Attributes in Highcharts elements for the most parts
+	 *   correspond to SVG, but some are specific to Highcharts, like `zIndex`,
+	 *   `rotation`, `translateX`, `translateY`, `scaleX` and `scaleY`. SVG
+	 *   attributes containing a hyphen are _not_ camel-cased, they should be
+	 *   quoted to preserve the hyphen.
+	 * @example
+	 * {
+	 *     'stroke': '#ff0000', // basic
+	 *     'stroke-width': 2, // hyphenated
+	 *     'rotation': 45 // custom
+	 *     'd': ['M', 10, 10, 'L', 30, 30, 'z'] // path definition, note format
+	 * }
+	 */
+	/**
+	 * Apply native and custom attributes to the SVG elements.
 	 * 
 	 * In order to set the rotation center for rotation, set x and y to 0 and
 	 * use `translateX` and `translateY` attributes to position the element
@@ -387,10 +401,8 @@ SVGElement.prototype = {
 	 * Attributes frequently used in Highcharts are `fill`, `stroke`,
 	 * `stroke-width`.
 	 *
-	 * @param {Object|String} hash - If an object, this is an object of
-	 *    key-value pairs containing SVG attributes. SVG attributes containing a
-	 *    hyphen are _not_ camel-cased, they should be quoted to preserve the
-	 *    hyphen.
+	 * @param {SVGAttributes|String} hash - The native and custom SVG
+	 *    attributes. 
 	 * @param {string} [val] - If the type of the first argument is `string`, 
 	 *    the second can be a value, which will serve as a single attribute
 	 *    setter. If the first argument is a string and the second is undefined,
@@ -608,10 +620,10 @@ SVGElement.prototype = {
 	 * 
 	 * @param {Object} rect - A rectangle.
 	 * @param {number} rect.x - The x position.
-	 * @param {Number} rect.y - The y position.
-	 * @param {Number} rect.width - The width.
-	 * @param {Number} rect.height - The height.
-	 * @param {Number} [strokeWidth] - The stroke width to consider when
+	 * @param {number} rect.y - The y position.
+	 * @param {number} rect.width - The width.
+	 * @param {number} rect.height - The height.
+	 * @param {number} [strokeWidth] - The stroke width to consider when
 	 *    computing crisp positioning. It can also be set directly on the rect
 	 *    parameter.
 	 *
@@ -852,8 +864,8 @@ SVGElement.prototype = {
 	/**
 	 * Move an object and its children by x and y values.
 	 * 
-	 * @param {Number} x - The x value.
-	 * @param {Number} y - The y value.
+	 * @param {number} x - The x value.
+	 * @param {number} y - The y value.
 	 */
 	translate: function (x, y) {
 		return this.attr({
@@ -1030,7 +1042,20 @@ SVGElement.prototype = {
 	},
 
 	/**
-	 * Get the bounding box (width, height, x and y) for the element.
+	 * Get the bounding box (width, height, x and y) for the element. Generally
+	 * used to get rendered text size. Since this is called a lot in charts,
+	 * the results are cached based on text properties, in order to save DOM
+	 * traffic. The returned bounding box includes the rotation, so for example
+	 * a single text line of rotation 90 will report a greater height, and a
+	 * width corresponding to the line-height.
+	 *
+	 * @param {boolean} [reload] Skip the cache and get the updated DOM bouding
+	 *   box.
+	 * @param {number} [rot] Override the element's rotation. This is internally
+	 *   used on axis labels with a value of 0 to find out what the bounding box
+	 *   would be have been if it were not rotated.
+	 * @returns {Object} The bounding box with `x`, `y`, `width` and `height`
+	 * properties.
 	 */
 	getBBox: function (reload, rot) {
 		var wrapper = this,
@@ -1174,19 +1199,34 @@ SVGElement.prototype = {
 	},
 
 	/**
-	 * Show the element
+	 * Show the element after it has been hidden. 
+	 *
+	 * @param {boolean} [inherit=false] Set the visibility attribute to
+	 * `inherit` rather than `visible`. The difference is that an element with
+	 * `visibility="visible"` will be visible even if the parent is hidden.
+	 *
+	 * @returns {SVGElement} Returns the SVGElement for chaining.
 	 */
 	show: function (inherit) {
 		return this.attr({ visibility: inherit ? 'inherit' : 'visible' });
 	},
 
 	/**
-	 * Hide the element
+	 * Hide the element, equivalent to setting the `visibility` attribute to
+	 * `hidden`.
+	 *
+	 * @returns {SVGElement} Returns the SVGElement for chaining.
 	 */
 	hide: function () {
 		return this.attr({ visibility: 'hidden' });
 	},
 
+	/**
+	 * Fade out an element by animating its opacity down to 0, and hide it on
+	 * complete. Used internally for the tooltip.
+	 * 
+	 * @param {number} [duration=150] The fade duration in milliseconds.
+	 */
 	fadeOut: function (duration) {
 		var elemWrapper = this;
 		elemWrapper.animate({
@@ -1200,9 +1240,14 @@ SVGElement.prototype = {
 	},
 
 	/**
-	 * Add the element
-	 * @param {Object|Undefined} parent Can be an element, an element wrapper or undefined
-	 *	to append the element to the renderer.box.
+	 * Add the element to the DOM. All elements must be added this way.
+	 * 
+	 * @param {SVGElement|SVGDOMElement} [parent] The parent item to add it to.
+	 *   If undefined, the element is added to the {@link SVGRenderer.box}.
+	 *
+	 * @returns {SVGElement} Returns the SVGElement for chaining.
+	 *
+	 * @sample highcharts/members/renderer-g - Elements added to a group
 	 */
 	add: function (parent) {
 
@@ -1245,8 +1290,10 @@ SVGElement.prototype = {
 	},
 
 	/**
-	 * Removes a child either by removeChild or move to garbageBin.
-	 * Issue 490; in VML removeChild results in Orphaned nodes according to sIEve, discardElement does not.
+	 * Removes an element from the DOM.
+	 *
+	 * @private
+	 * @param {SVGDOMElement|HTMLDOMElement} element The DOM node to remove.
 	 */
 	safeRemoveChild: function (element) {
 		var parentNode = element.parentNode;
@@ -1256,7 +1303,10 @@ SVGElement.prototype = {
 	},
 
 	/**
-	 * Destroy the element and element wrapper
+	 * Destroy the element and element wrapper and clear up the DOM and event
+	 * hooks.
+	 *
+	 * @returns {void}
 	 */
 	destroy: function () {
 		var wrapper = this,
@@ -1311,8 +1361,34 @@ SVGElement.prototype = {
 
 	/*= if (build.classic) { =*/
 	/**
-	 * Add a shadow to the element. Must be done after the element is added to the DOM
-	 * @param {Boolean|Object} shadowOptions
+	 * @typedef {Object} ShadowOptions
+	 * @property {string} [color=${palette.neutralColor100}] The shadow color.
+	 * @property {number} [offsetX=1] The horizontal offset from the element.
+	 * @property {number} [offsetY=1] The vertical offset from the element.
+	 * @property {number} [opacity=0.15] The shadow opacity.
+	 * @property {number} [width=3] The shadow width or distance from the
+	 *    element.
+	 */
+	/**
+	 * Add a shadow to the element. Must be called after the element is added to
+	 * the DOM. In styled mode, this method is not used, instead use `defs` and
+	 * filters.
+	 * 
+	 * @param {boolean|ShadowOptions} shadowOptions The shadow options. If
+	 *    `true`, the default options are applied. If `false`, the current
+	 *    shadow will be removed.
+	 * @param {SVGElement} [group] The SVG group element where the shadows will 
+	 *    be applied. The default is to add it to the same parent as the current
+	 *    element. Internally, this is ised for pie slices, where all the
+	 *    shadows are added to an element behind all the slices.
+	 * @param {boolean} [cutOff] Used internally for column shadows.
+	 *
+	 * @returns {SVGElement} Returns the SVGElement for chaining.
+	 *
+	 * @example
+	 * renderer.rect(10, 100, 100, 100)
+	 *     .attr({ fill: 'red' })
+	 *     .shadow(true);
 	 */
 	shadow: function (shadowOptions, group, cutOff) {
 		var shadows = [],
@@ -1366,6 +1442,10 @@ SVGElement.prototype = {
 
 	},
 
+	/**
+	 * Destroy shadows on the element.
+	 * @private
+	 */
 	destroyShadows: function () {
 		each(this.shadows || [], function (shadow) {
 			this.safeRemoveChild(shadow);
@@ -1388,7 +1468,10 @@ SVGElement.prototype = {
 
 	/**
 	 * Get the current value of an attribute or pseudo attribute, used mainly
-	 * for animation.
+	 * for animation. Called internally from the {@link SVGRenderer#attr}
+	 * function.
+	 *
+	 * @private
 	 */
 	_defaultGetter: function (key) {
 		var ret = pick(this[key], this.element ? this.element.getAttribute(key) : null, 0);
@@ -1585,21 +1668,45 @@ SVGElement.prototype['stroke-widthSetter'] = SVGElement.prototype.strokeSetter =
 /*= } =*/
 
 /**
- * The default SVG renderer.
- * @constructor SVGRenderer
+ * Allows direct access to the Highcharts rendering layer in order to draw
+ * primitive shapes like circles, rectangles, paths or text directly on a chart,
+ * or independent from any chart. The SVGRenderer represents a wrapper object
+ * for SVGin modern browsers and through the VMLRenderer, for VML in IE < 8.
+ *
+ * An existing chart's renderer can be accessed through {@link Chart#renderer}.
+ * The renderer can also be used completely decoupled from a chart.
+ *
+ * @param {HTMLDOMElement} container - Where to put the SVG in the web page.
+ * @param {number} width - The width of the SVG.
+ * @param {number} height - The height of the SVG.
+ * @param {boolean} [forExport=false] - Whether the rendered content is intended
+ *   for export.
+ * @param {boolean} [allowHTML=true] - Whether the renderer is allowed to
+ *   include HTML text, which will be projected on top of the SVG.
+ *
+ * @example
+ * // Use directly without a chart object.
+ * var renderer = new Highcharts.Renderer(parentNode, 600, 400);
+ *
+ * @sample highcharts/members/renderer-on-chart - Annotating a chart programmatically.
+ * @sample highcharts/members/renderer-basic - Independedt SVG drawing.
+ *
+ * @class
  */
 SVGRenderer = H.SVGRenderer = function () {
 	this.init.apply(this, arguments);
 };
 SVGRenderer.prototype = {
+	/**
+	 * A pointer to the renderer's associated Element class. The VMLRenderer
+	 * will have a pointer to VMLElement here.
+	 * @type {SVGElement}
+	 */
 	Element: SVGElement,
 	SVG_NS: SVG_NS,
 	/**
-	 * Initialize the SVGRenderer
-	 * @param {Object} container
-	 * @param {Number} width
-	 * @param {Number} height
-	 * @param {Boolean} forExport
+	 * Initialize the SVGRenderer. Overridable initiator function that takes
+	 * the same parameters as the constructor.
 	 */
 	init: function (container, width, height, style, forExport, allowHTML) {
 		var renderer = this,
@@ -1625,12 +1732,25 @@ SVGRenderer.prototype = {
 
 		// object properties
 		renderer.isSVG = true;
-		renderer.box = element;
-		renderer.boxWrapper = boxWrapper;
+
+		/** 
+		 * The root `svg` node of the renderer.
+		 * @type {SVGDOMElement}
+		 */
+		this.box = element;
+		/** 
+		 * The wrapper for the root `svg` node of the renderer.
+		 * @type {SVGElement}
+		 */
+		this.boxWrapper = boxWrapper;
 		renderer.alignedObjects = [];
 
-		// Page url used for internal references. #24, #672, #1070
-		renderer.url = (isFirefox || isWebKit) && doc.getElementsByTagName('base').length ?
+		/**
+		 * Page url used for internal references.
+		 * @type {string}
+		 */
+		// #24, #672, #1070
+		this.url = (isFirefox || isWebKit) && doc.getElementsByTagName('base').length ?
 				win.location.href
 					.replace(/#.*?$/, '') // remove the hash
 					.replace(/([\('\)])/g, '\\$1') // escape parantheses and quotes
@@ -1680,9 +1800,16 @@ SVGRenderer.prototype = {
 	},
 	/*= if (!build.classic) { =*/
 	/**
-	 * General method for adding a definition. Can be used for gradients, fills, filters etc.
+	 * General method for adding a definition to the SVG `defs` tag. Can be used
+	 *   for gradients, fills, filters etc. Styled mode only. A hook for adding
+	 *   general definitions to the SVG's defs tag. Definitions can be
+	 *   referenced from the CSS by its `id`. Read more in
+	 *   [gradients, shadows and patterns]{@link http://www.highcharts.com/docs/chart-design-and-style/gradients-shadows-and-patterns}.
 	 *
-	 * @return SVGElement The inserted node 
+	 * @param {Object} def - A serialized form of an SVG definition, including
+	 *   children
+	 *
+	 * @return {SVGElement} The inserted node. 
 	 */
 	definition: function (def) {
 		var ren = this;
@@ -1724,6 +1851,12 @@ SVGRenderer.prototype = {
 	/*= } =*/
 
 	/*= if (build.classic) { =*/
+	/**
+	 * Get the global style setting for the renderer.
+	 * @private
+	 * @param  {CSSObject} style - Style settings.
+	 * @return {CSSObject} The style settings mixed with defaults.
+	 */
 	getStyle: function (style) {
 		this.style = extend({
 			
@@ -1733,16 +1866,24 @@ SVGRenderer.prototype = {
 		}, style);
 		return this.style;
 	},
+	/**
+	 * Apply the global style on the renderer, mixed with the default styles.
+	 * @param {CSSObject} style - CSS to apply.
+	 */
 	setStyle: function (style) {
 		this.boxWrapper.css(this.getStyle(style));
 	},
 	/*= } =*/
 
 	/**
-	 * Detect whether the renderer is hidden. This happens when one of the parent elements
-	 * has display: none. #608.
+	 * Detect whether the renderer is hidden. This happens when one of the
+	 * parent elements has display: none. Used internally to detect when we need
+	 * to render preliminarily in another div to get the text bounding boxes 
+	 * right.
+	 *
+	 * @returns {boolean} True if it is hidden.
 	 */
-	isHidden: function () {
+	isHidden: function () { // #608
 		return !this.boxWrapper.getBBox().width;
 	},
 
@@ -1776,8 +1917,13 @@ SVGRenderer.prototype = {
 	},
 
 	/**
-	 * Create a wrapper for an SVG element
-	 * @param {Object} nodeName
+	 * Create a wrapper for an SVG element. Serves as a factory for 
+	 * {@link SVGElement}, but this function is itself mostly called from 
+	 * primitive factories like {@link SVGRenderer#path}, {@link
+	 * SVGRenderer#rect} or {@link SVGRenderer#text}.
+	 * 
+	 * @param {string} nodeName - The node name, for example `rect`, `g` etc.
+	 * @returns {SVGElement} The generated SVGElement.
 	 */
 	createElement: function (nodeName) {
 		var wrapper = new this.Element();
@@ -1786,12 +1932,18 @@ SVGRenderer.prototype = {
 	},
 
 	/**
-	 * Dummy function for plugins
+	 * Dummy function for plugins, called every time the renderer is updated.
+	 * Prior to Highcharts 5, this was used for the canvg renderer.
+	 * @function
 	 */
 	draw: noop,
 
 	/**
-	 * Get converted radial gradient attributes
+	 * Get converted radial gradient attributes according to the radial
+	 * reference. Used internally from the {@link SVGElement#colorGradient}
+	 * function.
+	 *
+	 * @private
 	 */
 	getRadialAttr: function (radialReference, gradAttr) {
 		return {
@@ -1802,9 +1954,12 @@ SVGRenderer.prototype = {
 	},
 
 	/**
-	 * Parse a simple HTML string into SVG tspans
-	 *
-	 * @param {Object} textNode The parent text SVG node
+	 * Parse a simple HTML string into SVG tspans. Called internally when text
+	 *   is set on an SVGElement. The function supports a subset of HTML tags,
+	 *   CSS text features like `width`, `text-overflow`, `white-space`, and
+	 *   also attributes like `href` and `style`.
+	 * @private
+	 * @param {SVGElement} wrapper The parent SVGElement.
 	 */
 	buildText: function (wrapper) {
 		var textNode = wrapper.element,
@@ -2085,7 +2240,10 @@ SVGRenderer.prototype = {
 	*/
 
 	/**
-	 * Returns white for dark colors and black for bright colors
+	 * Returns white for dark colors and black for bright colors.
+	 *
+	 * @param {ColorString} rgba - The color to get the contrast for.
+	 * @returns {string} The contrast color, either `#000000` or `#FFFFFF`.
 	 */
 	getContrast: function (rgba) {
 		rgba = color(rgba).rgba;
@@ -2093,14 +2251,21 @@ SVGRenderer.prototype = {
 	},
 
 	/**
-	 * Create a button with preset states
-	 * @param {String} text
-	 * @param {Number} x
-	 * @param {Number} y
-	 * @param {Function} callback
-	 * @param {Object} normalState
-	 * @param {Object} hoverState
-	 * @param {Object} pressedState
+	 * Create a button with preset states.
+	 * @param {string} text - The text or HTML to draw.
+	 * @param {number} x - The x position of the button's left side.
+	 * @param {number} y - The y position of the button's top side.
+	 * @param {Function} callback - The function to execute on button click or 
+	 *    touch.
+	 * @param {SVGAttributes} [normalState] - SVG attributes for the normal
+	 *    state.
+	 * @param {SVGAttributes} [hoverState] - SVG attributes for the hover state.
+	 * @param {SVGAttributes} [pressedState] - SVG attributes for the pressed
+	 *    state.
+	 * @param {SVGAttributes} [disabledState] - SVG attributes for the disabled
+	 *    state.
+	 * @param {Symbol} [shape=rect] - The shape type.
+	 * @returns {SVGRenderer} The button element.
 	 */
 	button: function (text, x, y, callback, normalState, hoverState, pressedState, disabledState, shape) {
 		var label = this.label(text, x, y, shape, null, null, null, null, 'button'),
@@ -2205,12 +2370,15 @@ SVGRenderer.prototype = {
 	},
 
 	/**
-	 * Make a straight line crisper by not spilling out to neighbour pixels
-	 * @param {Array} points
-	 * @param {Number} width
+	 * Make a straight line crisper by not spilling out to neighbour pixels.
+	 * 
+	 * @param {Array} points - The original points on the format `['M', 0, 0,
+	 *    'L', 100, 0]`.
+	 * @param {number} width - The width of the line.
+	 * @returns {Array} The original points array, but modified to render
+	 * crisply.
 	 */
 	crispLine: function (points, width) {
-		// points format: ['M', 0, 0, 'L', 100, 0]
 		// normalize to a crisp line
 		if (points[1] === points[4]) {
 			// Substract due to #1129. Now bottom and left axis gridlines behave the same.
@@ -2224,8 +2392,20 @@ SVGRenderer.prototype = {
 
 
 	/**
-	 * Draw a path
-	 * @param {Array} path An SVG path in array form
+	 * Draw a path, wraps the SVG `path` element.
+	 * 
+	 * @param {Array} [path] An SVG path definition in array form.
+	 * 
+	 * @example
+	 * var path = renderer.path(['M', 10, 10, 'L', 30, 30, 'z'])
+	 *     .attr({ stroke: '#ff00ff' })
+	 *     .add();
+	 * @returns {SVGElement} The generated wrapper element.
+	 *//**
+	 * Draw a path, wraps the SVG `path` element.
+	 * 
+	 * @param {SVGAttributes} [attribs] The initial attributes.
+	 * @returns {SVGElement} The generated wrapper element.
 	 */
 	path: function (path) {
 		var attribs = {
@@ -2242,10 +2422,17 @@ SVGRenderer.prototype = {
 	},
 
 	/**
-	 * Draw and return an SVG circle
-	 * @param {Number} x The x position
-	 * @param {Number} y The y position
-	 * @param {Number} r The radius
+	 * Draw a circle, wraps the SVG `circle` element.
+	 * 
+	 * @param {number} [x] The center x position.
+	 * @param {number} [y] The center y position.
+	 * @param {number} [r] The radius.
+	 * @returns {SVGElement} The generated wrapper element.
+	 *//**
+	 * Draw a circle, wraps the SVG `circle` element.
+	 * 
+	 * @param {SVGAttributes} [attribs] The initial attributes.
+	 * @returns {SVGElement} The generated wrapper element.
 	 */
 	circle: function (x, y, r) {
 		var attribs = isObject(x) ? x : { x: x, y: y, r: r },
@@ -2260,13 +2447,20 @@ SVGRenderer.prototype = {
 	},
 
 	/**
-	 * Draw and return an arc
-	 * @param {Number} x X position
-	 * @param {Number} y Y position
-	 * @param {Number} r Radius
-	 * @param {Number} innerR Inner radius like used in donut charts
-	 * @param {Number} start Starting angle
-	 * @param {Number} end Ending angle
+	 * Draw and return an arc.
+	 * @param {number} [x=0] Center X position.
+	 * @param {number} [y=0] Center Y position.
+	 * @param {number} [r=0] The outer radius of the arc.
+	 * @param {number} [innerR=0] Inner radius like used in donut charts.
+	 * @param {number} [start=0] The starting angle of the arc in radians, where
+	 *    0 is to the right and `-Math.PI/2` is up.
+	 * @param {number} [end=0] The ending angle of the arc in radians, where 0
+	 *    is to the right and `-Math.PI/2` is up.
+	 * @returns {SVGElement} The generated wrapper element.
+	 *//**
+	 * Draw and return an arc. Overloaded function that takes arguments object.
+	 * @param {SVGAttributes} attribs Initial SVG attributes.
+	 * @returns {SVGElement} The generated wrapper element.
 	 */
 	arc: function (x, y, r, innerR, start, end) {
 		var arc;
@@ -2293,12 +2487,12 @@ SVGRenderer.prototype = {
 
 	/**
 	 * Draw and return a rectangle
-	 * @param {Number} x Left position
-	 * @param {Number} y Top position
-	 * @param {Number} width
-	 * @param {Number} height
-	 * @param {Number} r Border corner radius
-	 * @param {Number} strokeWidth A stroke width can be supplied to allow crisp drawing
+	 * @param {number} x Left position
+	 * @param {number} y Top position
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {number} r Border corner radius
+	 * @param {number} strokeWidth A stroke width can be supplied to allow crisp drawing
 	 */
 	rect: function (x, y, width, height, r, strokeWidth) {
 
@@ -2379,10 +2573,10 @@ SVGRenderer.prototype = {
 	/**
 	 * Display an image
 	 * @param {String} src
-	 * @param {Number} x
-	 * @param {Number} y
-	 * @param {Number} width
-	 * @param {Number} height
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} width
+	 * @param {number} height
 	 */
 	image: function (src, x, y, width, height) {
 		var attribs = {
@@ -2581,6 +2775,14 @@ SVGRenderer.prototype = {
 	},
 
 	/**
+	 * @typedef {string} Symbol
+	 * 
+	 * Can be one of `arc`, `callout`, `circle`, `diamond`, `square`,
+	 * `triangle`, `triangle-down`. Symbols are used internally for point
+	 * markers, button and label borders and backgrounds, or custom shapes.
+	 * Extendable by adding to {@link SVGRenderer#symbols}.
+	 */
+	/**
 	 * An extendable collection of functions for defining symbol paths.
 	 */
 	symbols: {
@@ -2776,10 +2978,10 @@ SVGRenderer.prototype = {
 	/**
 	 * Define a clipping rectangle
 	 * @param {String} id
-	 * @param {Number} x
-	 * @param {Number} y
-	 * @param {Number} width
-	 * @param {Number} height
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} width
+	 * @param {number} height
 	 * @returns {ClipRect} A clipping rectangle.
 	 */
 	clipRect: function (x, y, width, height) {
@@ -2805,8 +3007,8 @@ SVGRenderer.prototype = {
 	/**
 	 * Add text to the SVG object
 	 * @param {String} str
-	 * @param {Number} x Left position
-	 * @param {Number} y Top position
+	 * @param {number} x Left position
+	 * @param {number} y Top position
 	 * @param {Boolean} useHTML Use HTML to render the text
 	 */
 	text: function (str, x, y, useHTML) {
@@ -2928,14 +3130,16 @@ SVGRenderer.prototype = {
 
 	/**
 	 * Add a label, a text item that can hold a colored or gradient background
-	 * as well as a border and shadow.
+	 * as well as a border and shadow. Supported custom attributes include
+	 * `padding`. 
+	 * 
 	 * @param {string} str
-	 * @param {Number} x
-	 * @param {Number} y
+	 * @param {number} x
+	 * @param {number} y
 	 * @param {String} shape
-	 * @param {Number} anchorX In case the shape has a pointer, like a flag, this is the
+	 * @param {number} anchorX In case the shape has a pointer, like a flag, this is the
 	 *	coordinates it should be pinned to
-	 * @param {Number} anchorY
+	 * @param {number} anchorY
 	 * @param {Boolean} baseline Whether to position the label relative to the text baseline,
 	 *	like renderer.text, or to the upper border of the rectangle.
 	 * @param {String} className Class name for the group
