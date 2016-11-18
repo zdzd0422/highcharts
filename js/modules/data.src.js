@@ -397,7 +397,8 @@ Highcharts.extend(Data.prototype, {
     		if (potDelimiters[';'] > potDelimiters[',']) {
     			itemDelimiter = ';';
     			
-    			//Try to deduce the decimal point if it's not explicitly set
+    			//Try to deduce the decimal point if it's not explicitly set.
+    			//If both commas or points is > 0 there is likely an issue
     			if (!options.decimalPoint) {
 	    			if (points > commas) {
 	    				options.decimalPoint = '.';    				
