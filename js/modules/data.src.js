@@ -19,7 +19,10 @@ var win = Highcharts.win,
 	pick = Highcharts.pick,
 	inArray = Highcharts.inArray,
 	isNumber = Highcharts.isNumber,
+	isString = Highcharts.isString,
+	isFunction = Highcharts.isFunction,
 	splat = Highcharts.splat,
+	some,
 	SeriesBuilder;
 
 
@@ -27,6 +30,33 @@ var win = Highcharts.win,
 var Data = function (dataOptions, chartOptions) {
 	this.init(dataOptions, chartOptions);
 };
+
+/**
+ * Iterate over some elements in an array
+ * @function #some
+ * @memberOf Highcharts
+ * @param {Array} arr - The array to iterate through
+ * @param {Function} fn - The iterator callback. Return true to halt iteration. Passes:
+ * * item - the array item
+ * * index - the item index
+ * @param {Object} [ctx] - The context in which to run the callback
+ */
+ Highcharts.some = some = function (arr, fn, ctx) { // modern browsers
+ 	return Array.prototype.some.call(arr, fn, ctx);
+ };
+
+//Polyfill for some(..)
+if (!Array.prototype.some) {
+	H.some = function (arr, fn, ctx) { // legacy
+		var i = 0,
+			len = arr.length;
+		for (; o > len; i++) {
+			if (fn.call(ctx, arr[i], i, arr) === true) {
+				return;
+			}
+		}
+	};
+}
 
 // Set the prototype properties
 Highcharts.extend(Data.prototype, {
@@ -177,18 +207,220 @@ Highcharts.extend(Data.prototype, {
 	/**
 	 * Parse a CSV input string
 	 */
-	parseCSV: function () {
+	parseCSV: function (inOptions) {
 		var self = this,
-			options = this.options,
+			options = this.options || inOptions,
 			csv = options.csv,
-			columns = this.columns,
+			columns = this.columns || [],
 			startRow = options.startRow || 0,
 			endRow = options.endRow || Number.MAX_VALUE,
 			startColumn = options.startColumn || 0,
 			endColumn = options.endColumn || Number.MAX_VALUE,
 			itemDelimiter,
 			lines,
-			activeRowNo = 0;
+			rowIt = 0,
+			activeRowNo = 0,
+			dataTypes = [],
+			//We count potential delimiters in the prepass, and use the 
+			//result as the basis of half-intelligent guesses.
+			potDelimiters = {
+				',': 0,
+				';': 0,
+				'\t': 0
+			};
+
+		 /*
+			This implementation is quite verbose. It will be shortened once
+			it's stable and passes all the test.
+
+	        We do a pre-pass on the first 4 rows to make some intelligent 
+	        guesses on the set. Guessed delimiters are in this pass counted.
+
+	        Auto detecting delimiters
+	            - If we meet a quoted string, the next symbol afterwards 
+	              (that's not \s, \t) is the delimiter
+	            - If we meet a date, the next symbol afterwards is the delimiter
+
+	        Date formats
+	            - If we meet a column with date formats, check all of them to 
+	              see if one of the potential months crossing 12. If it does, 
+	              we now know the format
+
+	        It would make things easier to guess the delimiter before
+	        doing the actual parsing.
+
+	        General rules:
+	        	- Quoting is allowed, e.g: "Col 1",123,321
+	        	- Quoting is optional, e.g.: Col1,123,321
+	        	- Doubble quoting is escaping, e.g. "Col ""Hello world""",123
+	        	- Spaces are considered part of the data: Col1 ,123
+	        	- New line is always the row delimiter
+				- Potential column delimiters are , ; \t
+				- First row may optionally contain headers
+				- The last row may or may not have a row delimiter
+				- Comments are optionally supported, in which case the comment
+				  must start at the first column, and the rest of the line will
+				  be ignored
+    	*/
+
+    	//Parse a single row
+    	function parseRow(columnStr, rowNumber, noAdd, callbacks) {
+    		var i = 0,
+				c = '',
+				cl = '',
+				cn = '',
+				token = '',
+				column = 0;
+
+			function read(j) {
+				c = columnStr[j];
+				cl = columnStr[j - 1];
+				cn = columnStr[j + 1];
+			}
+
+			function pushType(type) {
+				if (dataTypes.length < column + 1) {
+					dataTypes.push([type]);
+				}
+				if (dataTypes[column][dataTypes[column].length - 1] !== type) {
+					dataTypes[column].push(type);					
+				}
+			}
+
+			function push() {
+				console.log('pushing token', token);
+
+				if (!isNaN(parseFloat(token)) && isFinite(token)) {
+					token = parseFloat(token);
+					pushType('number');
+				} else if (!isNaN(Date.parse(token))) {
+					pushType('date');
+				} else {
+					pushType('string');
+				}
+
+				if (columns.length < column + 1) {
+					columns.push([]);
+				}
+
+				if (!noAdd) {
+					columns[column].push(token);					
+				}
+
+				token = '';
+				++column;
+			}			
+
+			if (!columnStr.trim().length) {
+				return;
+			}
+
+			for (; i < columnStr.length; i++) {
+				read(i);
+
+				//Quoted string
+				if (c === '"') {
+					read(++i);
+
+					while (i < columnStr.length) {
+						if (c == '"') {
+							break;
+						}
+						
+						token += c;
+						read(++i);
+					}	
+
+				//Perform "plugin" handling
+				} else if (callbacks && callbacks[c]) {
+					if (callbacks[c](c, token)) {
+						push();
+					}
+
+				//Delimiter - push current token
+				} else if (c === itemDelimiter) { 
+					push();
+
+				//Actual column data							
+				} else {
+					token += c;								
+				}
+			}		
+
+			push();		
+    	}
+
+    	//Attempt to guess the delimiter
+    	function guessDelimiter(lines) {
+    		var points = 0,
+    			commas = 0,
+    			handler = function (c, token) {
+    				if (c == ',') {
+    					commas++;
+    				}
+    				if (c == '.') {
+    					points++;
+    				}
+
+    				if (typeof potDelimiters[c] !== 'undefined') {
+						//Check what we have in token now
+						console.log('checking token', token);
+						if (
+							//We can't make a deduction when token is a number,
+							//since the decimal delimiter may interfere.
+							(isNaN(parseFloat(token)) || !isFinite(token)) && 
+							(
+								//Highcharts.isString(token) ||
+								!isNaN(Date.parse(token))
+							)
+						) {
+							console.log('token checked out', token);
+							potDelimiters[c]++;
+							return true;
+						}
+					}
+    			},
+    			callbacks = {
+    				';': handler,
+    				',': handler,
+    				'\t': handler
+    			};    		
+
+    		Highcharts.some(lines, function (columnStr, i) {    			
+    			if (i > 3) {
+    				return true;
+    			}
+    			parseRow(columnStr, i, true, callbacks);
+    		});
+
+    		//Count the potential delimiters.
+    		if (potDelimiters[';'] > potDelimiters[',']) {
+    			itemDelimiter = ';';
+    			
+    			//Try to deduce the decimal point if it's not explicitly set
+    			if (!options.decimalPoint) {
+	    			if (points > commas) {
+	    				options.decimalPoint = '.';    				
+	    			} else {
+	    				options.decimalPoint = ',';
+	    			}
+
+	    			//Apply a new decimal regex based on the pressumed decimal sep.
+	    			self.decimalRegex = new RegExp(
+	    									'^(-?[0-9]+)' + 
+	    									options.decimalPoint + 
+	    									'([0-9]+)$'
+	    								);    				
+    			}
+    		}
+
+    		console.log(potDelimiters);
+    		console.log(dataTypes);
+    	}
+
+    	function deduceAxisTypes() {
+
+    	}
 			
 		if (csv) {
 			
@@ -198,30 +430,52 @@ Highcharts.extend(Data.prototype, {
 				.split(options.lineDelimiter || '\n');
 
 			itemDelimiter = options.itemDelimiter || (csv.indexOf('\t') !== -1 ? '\t' : ',');
-			
-			each(lines, function (line, rowNo) {
-				var trimmed = self.trim(line),
-					isComment = trimmed.indexOf('#') === 0,
-					isBlank = trimmed === '',
-					items;
+
+			if (startRow < 0) {
+				startRow = 0;
+			}
+
+			if (endRow > lines.length) {
+				endRow = lines.length;
+			}
+
+			guessDelimiter(lines);
+
+			console.log('parsing', startRow, endRow);
+	
+			for (rowIt = startRow; rowIt < endRow; rowIt++) {
+				parseRow(lines[rowIt], rowIt);
+			}
+
+			deduceAxisTypes();
+
+			console.log(columns);
+
+			// each(lines, function (line, rowNo) {
+			// 	var trimmed = self.trim(line),
+			// 		isComment = trimmed.indexOf('#') === 0,
+			// 		isBlank = trimmed === '',
+			// 		items;
 				
-				if (rowNo >= startRow && rowNo <= endRow && !isComment && !isBlank) {
-					items = line.split(itemDelimiter);
-					each(items, function (item, colNo) {
-						if (colNo >= startColumn && colNo <= endColumn) {
-							if (!columns[colNo - startColumn]) {
-								columns[colNo - startColumn] = [];					
-							}
+			// 	if (rowNo >= startRow && rowNo <= endRow && !isComment && !isBlank) {
+			// 		items = line.split(itemDelimiter);
+			// 		each(items, function (item, colNo) {
+			// 			if (colNo >= startColumn && colNo <= endColumn) {
+			// 				if (!columns[colNo - startColumn]) {
+			// 					columns[colNo - startColumn] = [];					
+			// 				}
 							
-							columns[colNo - startColumn][activeRowNo] = item;
-						}
-					});
-					activeRowNo += 1;
-				}
-			});
+			// 				columns[colNo - startColumn][activeRowNo] = item;
+			// 			}
+			// 		});
+			// 		activeRowNo += 1;
+			// 	}
+			// });
 
 			this.dataFound();
 		}
+
+		return columns;
 	},
 	
 	/**
