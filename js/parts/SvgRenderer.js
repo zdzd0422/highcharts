@@ -2312,6 +2312,7 @@ SVGRenderer.prototype = {
 			}
 		}, normalState);
 		normalStyle = normalState.style;
+
 		delete normalState.style;
 
 		// Hover state
@@ -3204,6 +3205,7 @@ SVGRenderer.prototype = {
 			wrapperX,
 			wrapperY,
 			textAlign,
+			textVerticalAlign,
 			deferredAttr = {},
 			strokeWidth,
 			baselineOffset,
@@ -3294,6 +3296,13 @@ SVGRenderer.prototype = {
 				textX += { center: 0.5, right: 1 }[textAlign] * (width - bBox.width);
 			}
 
+			if (defined(height) && bBox && (textVerticalAlign === 'middle' || textVerticalAlign === 'bottom')) {
+				textY += {
+					middle: 0.5,
+					bottom: 1
+				}[textVerticalAlign] * (height - bBox.height);
+			}
+
 			// update if anything changed
 			if (textX !== text.x || textY !== text.y) {
 				text.attr('x', textX);
@@ -3353,6 +3362,9 @@ SVGRenderer.prototype = {
 		};
 		wrapper['text-alignSetter'] = function (value) {
 			textAlign = value;
+		};		
+		wrapper.verticalAlignSetter = function (value) {
+			textVerticalAlign = value;
 		};
 		wrapper.paddingSetter =  function (value) {
 			if (defined(value) && value !== padding) {
