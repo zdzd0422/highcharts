@@ -703,6 +703,8 @@ Navigator.prototype = {
 		if (scroller.navigatorEnabled) {
 			// an x axis is required for scrollbar also
 			scroller.xAxis = xAxis = new Axis(chart, merge({
+				offset: 0 // #2685
+			}, {
 				// inherit base xAxis' break and ordinal options
 				breaks: baseXaxis.options.breaks,
 				ordinal: baseXaxis.options.ordinal
@@ -713,7 +715,6 @@ Navigator.prototype = {
 				type: 'datetime',
 				index: xAxisIndex,
 				height: height,
-				offset: 0,
 				offsetLeft: scrollbarHeight,
 				offsetRight: -scrollbarHeight,
 				keepOrdinalPadding: true, // #2436
