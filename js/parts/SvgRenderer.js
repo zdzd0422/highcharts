@@ -115,7 +115,6 @@ SVGElement.prototype = {
 	 */
 	animate: function (params, options, complete) {
 		var animOptions = pick(options, this.renderer.globalAnimation, true);
-		stop(this); // stop regardless of animation actually running, or reverting to .attr (#607)
 		if (animOptions) {
 			if (complete) { // allows using a callback with the global animation without overwriting it
 				animOptions.complete = complete;
@@ -354,8 +353,6 @@ SVGElement.prototype = {
 				}
 			});
 			
-			this.realBox = elem.getBBox();
-
 			// For each of the tspans, create a stroked copy behind it.
 			each(tspans, function (tspan, y) {
 				var clone;
@@ -468,7 +465,11 @@ SVGElement.prototype = {
 				value = hash[key];
 				skipAttr = false;
 
-
+				// Unless .attr is from the animator update, stop current
+				// running animation of this property
+				if (key !== this.animProp) {
+					stop(this, key);
+				}
 
 				if (this.symbolName && /^(x|y|width|height|r|start|end|innerR|anchorX|anchorY)/.test(key)) {
 					if (!hasSetSymbolSize) {
