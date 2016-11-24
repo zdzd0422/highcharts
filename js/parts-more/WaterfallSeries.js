@@ -62,6 +62,7 @@ seriesType('waterfall', 'column', {
 			minPointLength = pick(options.minPointLength, 5),
 			threshold = options.threshold,
 			stacking = options.stacking,
+			stackIndicator,
 			tooltipY;
 
 		// run column series translate
@@ -79,8 +80,9 @@ seriesType('waterfall', 'column', {
 
 			// get current stack
 			stack = stacking && yAxis.stacks[(series.negStacks && yValue < threshold ? '-' : '') + series.stackKey];
+			stackIndicator = series.getStackIndicator(stackIndicator, point.x);
 			range = stack ?
-				stack[point.x].points[series.index + ',' + i] :
+				stack[point.x].points[series.index + ',' + i + ',' + stackIndicator.index] :
 				[0, yValue];
 
 			// override point value for sums
