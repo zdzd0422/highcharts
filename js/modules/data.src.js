@@ -885,7 +885,7 @@ Highcharts.extend(Data.prototype, {
 					d = new Date()
 				;
 
-				if (year > (d.getYear() - 2000)) {
+				if (year > (d.getFullYear() - 2000)) {
 					year += 1900;
 				} else {
 					year += 2000;
