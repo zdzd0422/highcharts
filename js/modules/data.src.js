@@ -233,6 +233,10 @@ Highcharts.extend(Data.prototype, {
 			This implementation is quite verbose. It will be shortened once
 			it's stable and passes all the test.
 
+			It's also not written with speed in mind, instead everything is
+			very seggregated, and there a several redundant loops.
+			This is to make it easier to stabilize the code initially.
+
 	        We do a pre-pass on the first 4 rows to make some intelligent 
 	        guesses on the set. Guessed delimiters are in this pass counted.
 
@@ -305,7 +309,7 @@ Highcharts.extend(Data.prototype, {
 
 				if (!noAdd) {
 					columns[column].push(token);					
-				}
+				}				
 
 				token = '';
 				++column;
@@ -396,29 +400,118 @@ Highcharts.extend(Data.prototype, {
     		//Count the potential delimiters.
     		if (potDelimiters[';'] > potDelimiters[',']) {
     			itemDelimiter = ';';
-    			
-    			//Try to deduce the decimal point if it's not explicitly set.
-    			//If both commas or points is > 0 there is likely an issue
-    			if (!options.decimalPoint) {
-	    			if (points > commas) {
-	    				options.decimalPoint = '.';    				
-	    			} else {
-	    				options.decimalPoint = ',';
-	    			}
-
-	    			//Apply a new decimal regex based on the pressumed decimal sep.
-	    			self.decimalRegex = new RegExp(
-	    									'^(-?[0-9]+)' + 
-	    									options.decimalPoint + 
-	    									'([0-9]+)$'
-	    								);    				
-    			}
+    		} else if (potDelimiters[','] > potDelimiters[';']) {
+    			itemDelimiter = ',';
+    		} else {
+    			itemDelimiter = ',';
     		}
+    			
+			//Try to deduce the decimal point if it's not explicitly set.
+			//If both commas or points is > 0 there is likely an issue
+			if (!options.decimalPoint) {
+    			if (points > commas) {
+    				options.decimalPoint = '.';    				
+    			} else {
+    				options.decimalPoint = ',';
+    			}
+
+    			//Apply a new decimal regex based on the pressumed decimal sep.
+    			self.decimalRegex = new RegExp(
+					'^(-?[0-9]+)' + 
+					options.decimalPoint + 
+					'([0-9]+)$'
+				);    				
+			}
+    		
 
     		console.log(potDelimiters);
     		console.log(dataTypes);
     	}
 
+    	/* Tries to guess the date format
+    	 *	- Check if either month candidate exceeds 12
+    	 *  - Check if year is missing (use current year)
+    	 *  - Check if a shortened year format is used (e.g. 1/1/99)
+    	 *  - If no guess can be made, the user must be prompted
+    	 * data is the data to deduce a format based on
+    	 */
+    	function deduceDateFormat(data, limit) {
+    		var format = 'YYYY-mm-dd',
+    			thing,
+    			guessedFormat,
+    			calculatedFormat,
+    			i = 0,
+    			madeDeduction = false,
+    			candidates = {},
+    			j;
+
+    		if (!limit || limit > data.length) {
+    			limit = data.length;
+    		}     		
+
+    		for (; i < limit; i++) {    		
+    			if (typeof data[i] !== 'undefined') {
+	    			thing = data[i]
+	    					.trim()
+	    					.replace(/\//g, ' ')
+	    					.replace(/\-/g, ' ')
+	    					.split(' ');
+	    			
+	    			guessedFormat = [
+	    				'',
+	    				'',
+	    				''
+	    			];	    			
+
+	    			for (j = 0; j < thing.length; j++) {
+	    				if (j < guessedFormat.length) {	    					
+		    				thing[j] = parseInt(thing[j]);
+
+		    				if (thing[j]) {
+			    				if (thing[j] > 31) {
+			    					if (thing[j] < 100) {
+			    						guessedFormat[j] = 'YY';
+			    					} else {
+			    						guessedFormat[j] = 'YYYY';
+			    					}
+			    					//madeDeduction = true;
+			    				} else if (thing[j] > 12) {
+			    					guessedFormat[j] = 'dd';	
+			    					madeDeduction = true;			
+			    				} else if (!guessedFormat[j].length) {
+			    					guessedFormat[j] = 'mm';
+			    				}		    					
+		    				}
+		    				
+	    				}
+	    			}
+
+	    			if (madeDeduction) {
+	    				
+	    				calculatedFormat = '';
+
+	    				each(guessedFormat, function (thing, i) {
+	    					if (thing.length) {    						
+	    						if (i > 0) {
+	    							calculatedFormat += '/';
+	    						}
+	    						calculatedFormat += thing.trim();
+	    					}
+	    				});
+
+	    				console.log('calculated format', calculatedFormat, thing);
+	    				return calculatedFormat;
+	    			}
+    			} 
+    		}
+    		return format;
+    	}
+
+    	/* Figure out the best axis types for the data
+    	 * - If the first column is a number, we're good
+    	 * - If the first column is a date, set to date/time
+    	 * - If the first column is a string, set to categories
+    	 */
     	function deduceAxisTypes() {
 
     	}
@@ -430,7 +523,6 @@ Highcharts.extend(Data.prototype, {
 				.replace(/\r/g, '\n') // Mac
 				.split(options.lineDelimiter || '\n');
 
-			itemDelimiter = options.itemDelimiter || (csv.indexOf('\t') !== -1 ? '\t' : ',');
 
 			if (startRow < 0) {
 				startRow = 0;
@@ -440,7 +532,12 @@ Highcharts.extend(Data.prototype, {
 				endRow = lines.length;
 			}
 
-			guessDelimiter(lines);
+			if (options.itemDelimiter) {
+				itemDelimiter = options.itemDelimiter;				
+			} else {
+				itemDelimiter = null;
+				guessDelimiter(lines);				
+			}
 
 			console.log('parsing', startRow, endRow);
 	
@@ -448,7 +545,16 @@ Highcharts.extend(Data.prototype, {
 				parseRow(lines[rowIt], rowIt);
 			}
 
-			deduceAxisTypes();
+			// //Make sure that there's header columns for everything
+			// each(columns, function (col) {
+
+			// });
+
+			deduceAxisTypes();		
+
+			if (dataTypes[0][1] === 'date' && !options.dateFormat) {
+				options.dateFormat = deduceDateFormat(columns[0]);					
+			}
 
 			console.log(columns);
 
@@ -747,6 +853,18 @@ Highcharts.extend(Data.prototype, {
 				return Date.UTC(+match[1], match[2] - 1, +match[3]);
 			}
 		},
+		'YYYY/mm/dd': {
+			regex: /^([0-9]{4})[\-\/\.]([0-9]{2})[\-\/\.]([0-9]{2})$/,
+			parser: function (match) {
+				return Date.UTC(+match[1], match[2] - 1, +match[3]);
+			}
+		},
+		'YYYY/dd/mm': {
+			regex: /^([0-9]{4})[\-\/\.]([0-9]{2})[\-\/\.]([0-9]{2})$/,
+			parser: function (match) {
+				return Date.UTC(+match[1], +match[3], match[2] - 1);
+			}
+		},
 		'dd/mm/YYYY': {
 			regex: /^([0-9]{1,2})[\-\/\.]([0-9]{1,2})[\-\/\.]([0-9]{4})$/,
 			parser: function (match) {
@@ -763,7 +881,17 @@ Highcharts.extend(Data.prototype, {
 		'dd/mm/YY': {
 			regex: /^([0-9]{1,2})[\-\/\.]([0-9]{1,2})[\-\/\.]([0-9]{2})$/,
 			parser: function (match) {
-				return Date.UTC(+match[3] + 2000, match[2] - 1, +match[1]);
+				var year = +match[3],
+					d = new Date()
+				;
+
+				if (year > (d.getYear() - 2000)) {
+					year += 1900;
+				} else {
+					year += 2000;
+				}
+
+				return Date.UTC(year, match[2] - 1, +match[1]);
 			},
 			alternative: 'mm/dd/YY' // different format with the same regex
 		},
