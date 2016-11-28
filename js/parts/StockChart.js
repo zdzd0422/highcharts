@@ -69,7 +69,11 @@ H.StockChart = H.stockChart = function (a, b, c) {
 			shadow: false,
 			borderWidth: 0
 		},
-		titleFontSize = defaultOptions.title.style.fontSize;
+		titleFontSize = defaultOptions.title.style.fontSize,
+		rangeSelectorEnabled = defaultOptions.rangeSelector.enabled,
+		scrollbarEnabled = defaultOptions.scrollbar.enabled;
+
+	navigatorEnabled = defaultOptions.navigator.enabled;
 
 	// apply X axis options to both single and multi y axes
 	options.xAxis = map(splat(options.xAxis || {}), function (xAxisOptions) {
@@ -123,13 +127,13 @@ H.StockChart = H.stockChart = function (a, b, c) {
 				pinchType: 'x'
 			},
 			navigator: {
-				enabled: true
+				enabled: navigatorEnabled === undefined ? true : navigatorEnabled // #4988 - check if setOptions was called
 			},
 			scrollbar: {
-				enabled: true
+				enabled: scrollbarEnabled === undefined ? true : scrollbarEnabled // #4988 - check if setOptions was called
 			},
 			rangeSelector: {
-				enabled: true
+				enabled: rangeSelectorEnabled === undefined ? true : rangeSelectorEnabled // #4988 - check if setOptions was called
 			},
 			title: {
 				text: null,
