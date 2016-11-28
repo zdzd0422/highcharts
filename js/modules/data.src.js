@@ -358,6 +358,7 @@ Highcharts.extend(Data.prototype, {
     	function guessDelimiter(lines) {
     		var points = 0,
     			commas = 0,
+    			guessed = false,
     			handler = function (c, token) {
     				if (c == ',') {
     					commas++;
@@ -398,12 +399,15 @@ Highcharts.extend(Data.prototype, {
     		});
 
     		//Count the potential delimiters.
+    		//This could be improved by checking if the number of delimiters
+    		//equals the number of columns - 1
     		if (potDelimiters[';'] > potDelimiters[',']) {
-    			itemDelimiter = ';';
+    			guessed = ';';
     		} else if (potDelimiters[','] > potDelimiters[';']) {
-    			itemDelimiter = ',';
+    			guessed = ',';    		
     		} else {
-    			itemDelimiter = ',';
+    			//No good guess could be made..
+    			guessed = ',';
     		}
     			
 			//Try to deduce the decimal point if it's not explicitly set.
@@ -423,7 +427,7 @@ Highcharts.extend(Data.prototype, {
 				);    				
 			}
     		
-
+			return guessed;
     		console.log(potDelimiters);
     		console.log(dataTypes);
     	}
@@ -536,7 +540,7 @@ Highcharts.extend(Data.prototype, {
 				itemDelimiter = options.itemDelimiter;				
 			} else {
 				itemDelimiter = null;
-				guessDelimiter(lines);				
+				itemDelimiter = guessDelimiter(lines);				
 			}
 
 			console.log('parsing', startRow, endRow);

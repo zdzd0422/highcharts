@@ -23,11 +23,6 @@ $(function () {
 
         series: [{
             lineWidth: 1
-        }, {
-            type: 'areaspline',
-            color: '#c4392d',
-            negativeColor: '#5679c4',
-            fillOpacity: 0.5
         }]
     });
 });
