@@ -583,6 +583,7 @@ RangeSelector.prototype = {
 		};
 		// Hide away the input box
 		input.onblur = function () {
+			updateExtremes(); // #4710 - call setExtremes when click on the chart after input edit
 			rangeSelector.hideInput(name);
 		};
 
