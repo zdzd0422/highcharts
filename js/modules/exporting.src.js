@@ -27,7 +27,6 @@ var defaultOptions = H.defaultOptions,
 	pick = H.pick,
 	each = H.each,
 	extend = H.extend,
-	splat = H.splat,
 	isTouchDevice = H.isTouchDevice,
 	win = H.win,
 	SVGRenderer = H.SVGRenderer;
@@ -343,6 +342,11 @@ extend(Chart.prototype, {
 			}
 		});
 
+		// Assign an internal key to ensure a one-to-one mapping (#5924)
+		each(chart.axes, function (axis) {
+			axis.userOptions.internalKey = H.uniqueKey();
+		});
+
 		// generate the chart copy
 		chartCopy = new H.Chart(options, chart.callback);
 
@@ -357,18 +361,19 @@ extend(Chart.prototype, {
 			});
 		}
 
-		// reflect axis extremes in the export
-		each(['xAxis', 'yAxis'], function (axisType) {
-			each(chart[axisType], function (axis, i) {
-				var axisCopy = chartCopy[axisType][i],
-					extremes = axis.getExtremes(),
-					userMin = extremes.userMin,
-					userMax = extremes.userMax;
+		// Reflect axis extremes in the export (#5924)
+		each(chart.axes, function (axis) {
+			var axisCopy = H.find(chartCopy.axes, function (copy) {
+					return copy.options.internalKey === 
+						axis.userOptions.internalKey;
+				}),
+				extremes = axis.getExtremes(),
+				userMin = extremes.userMin,
+				userMax = extremes.userMax;
 
-				if (axisCopy && (userMin !== undefined || userMax !== undefined)) {
-					axisCopy.setExtremes(userMin, userMax, true, false);
-				}
-			});
+			if (axisCopy && (userMin !== undefined || userMax !== undefined)) {
+				axisCopy.setExtremes(userMin, userMax, true, false);
+			}
 		});
 
 		// Get the SVG from the container's innerHTML

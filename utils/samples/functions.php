@@ -48,6 +48,11 @@ function getBrowser() {
     if(preg_match('/MSIE/i',$u_agent) && !preg_match('/Opera/i',$u_agent)) 
     { 
         $bname = 'Internet Explorer'; 
+        $ub = "MSIE";
+    } 
+    elseif(preg_match('/Trident/i',$u_agent)) 
+    { 
+        $bname = 'Internet Explorer'; 
         $ub = "MSIE"; 
     } 
     elseif(preg_match('/Firefox/i',$u_agent)) 
@@ -98,7 +103,7 @@ function getBrowser() {
             $version= $matches['version'][0];
         }
         else {
-            $version= $matches['version'][1];
+            @$version= $matches['version'][1];
         }
     }
     else {
@@ -114,7 +119,8 @@ function getBrowser() {
         'version'   => $version,
         'platform'  => $platform,
         'pattern'   => $pattern,
-        'parent'    => $bname . ' ' . $version
+        //'parent'    => $bname . ' ' . $version
+        'parent'    => $ub
     );
 } 
 
