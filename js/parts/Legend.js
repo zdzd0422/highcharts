@@ -82,7 +82,6 @@ Legend.prototype = {
 	 */
 	update: function (options, redraw) {
 		var chart = this.chart;
-
 		this.setOptions(merge(true, this.options, options));
 		this.destroy();
 		chart.isDirtyLegend = chart.isDirtyBox = true;
@@ -195,6 +194,9 @@ Legend.prototype = {
 		if (box) {
 			legend.box = box.destroy();
 		}
+		if (this.title) {
+			this.title = this.title.destroy();
+		}
 
 		// Destroy items
 		each(this.getAllItems(), function (item) {
@@ -247,7 +249,7 @@ Legend.prototype = {
 			titleOptions = options.title,
 			titleHeight = 0,
 			bBox;
-
+		
 		if (titleOptions.text) {
 			if (!this.title) {
 				this.title = this.chart.renderer.label(titleOptions.text, padding - 3, padding - 4, null, null, null, null, null, 'legend-title')
@@ -509,6 +511,7 @@ Legend.prototype = {
 		}
 
 		legend.renderTitle();
+		
 
 		// add each series or point
 		allItems = legend.getAllItems();
