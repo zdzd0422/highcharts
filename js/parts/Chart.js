@@ -23,7 +23,6 @@ var addEvent = H.addEvent,
 	css = H.css,
 	defined = H.defined,
 	each = H.each,
-	error = H.error,
 	extend = H.extend,
 	find = H.find,
 	fireEvent = H.fireEvent,
@@ -42,6 +41,7 @@ var addEvent = H.addEvent,
 	seriesTypes = H.seriesTypes,
 	splat = H.splat,
 	svg = H.svg,
+	stableSort = H.stableSort,
 	syncTimeout = H.syncTimeout,
 	win = H.win,
 	Renderer = H.Renderer;
@@ -181,12 +181,29 @@ Chart.prototype = {
 
 		// No such series type
 		if (!Constr) {
-			error(17, true);
+			H.error(17, true);
 		}
 
 		series = new Constr();
 		series.init(this, options);
 		return series;
+	},
+
+	/**
+	 * Sort series based on their inferred index or index option.
+	 * @param {Series} [newSeries] The new series that is added prior to calling
+	 *    the sorting function.
+	 */
+	sortSeries: function (newSeries) {
+		function sortByIndex(a, b) {
+			return pick(a.options.index, a._i) - pick(b.options.index, b._i);
+		}
+
+		// #248, #1123, #2456
+		stableSort(this.series, sortByIndex);
+		if (newSeries.yAxis) {
+			stableSort(newSeries.yAxis.series, sortByIndex);
+		}
 	},
 
 	/**
@@ -667,7 +684,7 @@ Chart.prototype = {
 
 		// Display an error if the renderTo is wrong
 		if (!renderTo) {
-			error(13, true);
+			H.error(13, true);
 		}
 
 		// If the container already holds a chart, destroy it. The check for hasRendered is there

@@ -21,7 +21,6 @@ var addEvent = H.addEvent,
 	defined = H.defined,
 	each = H.each,
 	erase = H.erase,
-	error = H.error,
 	extend = H.extend,
 	fireEvent = H.fireEvent,
 	grep = H.grep,
@@ -34,7 +33,6 @@ var addEvent = H.addEvent,
 	Point = H.Point, // @todo  add as a requirement
 	removeEvent = H.removeEvent,
 	splat = H.splat,
-	stableSort = H.stableSort,
 	SVGElement = H.SVGElement,
 	syncTimeout = H.syncTimeout,
 	win = H.win;
@@ -187,10 +185,7 @@ H.Series = H.seriesType('line', null, { // base series options
 			eventType,
 			events,
 			chartSeries = chart.series,
-			lastSeries,
-			sortByIndex = function (a, b) {
-				return pick(a.options.index, a._i) - pick(b.options.index, b._i);
-			};
+			lastSeries;
 
 		series.chart = chart;
 		series.options = options = series.setOptions(options); // merge with plotOptions
@@ -242,11 +237,8 @@ H.Series = H.seriesType('line', null, { // base series options
 		series._i = pick(lastSeries && lastSeries._i, -1) + 1;
 		chartSeries.push(series);
 
-		// Sort series according to index option (#248, #1123, #2456)
-		stableSort(chartSeries, sortByIndex);
-		if (this.yAxis) {
-			stableSort(this.yAxis.series, sortByIndex);
-		}
+		// Sort series based on index
+		chart.sortSeries(this);
 
 		each(chartSeries, function (series, i) {
 			series.index = i;
@@ -293,7 +285,7 @@ H.Series = H.seriesType('line', null, { // base series options
 
 			// The series needs an X and an Y axis
 			if (!series[AXIS] && series.optionalAxis !== AXIS) {
-				error(18, true);
+				H.error(18, true);
 			}
 
 		});
@@ -562,7 +554,7 @@ H.Series = H.seriesType('line', null, { // base series options
 						}
 					}
 				} else {
-					error(12); // Highcharts expects configs to be numbers or arrays in turbo mode
+					H.error(12); // Highcharts expects configs to be numbers or arrays in turbo mode
 				}
 			} else {
 				for (i = 0; i < dataLength; i++) {
@@ -576,7 +568,7 @@ H.Series = H.seriesType('line', null, { // base series options
 
 			// Forgetting to cast strings to numbers is a common caveat when handling CSV or JSON
 			if (isString(yData[0])) {
-				error(14, true);
+				H.error(14, true);
 			}
 
 			series.data = [];
@@ -683,7 +675,7 @@ H.Series = H.seriesType('line', null, { // base series options
 			// Unsorted data is not supported by the line tooltip, as well as data grouping and
 			// navigation in Stock charts (#725) and width calculation of columns (#1900)
 			} else if (distance < 0 && series.requireSorting) {
-				error(15);
+				H.error(15);
 			}
 		}
 
@@ -976,6 +968,8 @@ H.Series = H.seriesType('line', null, { // base series options
 				lastPlotX = plotX;
 			}
 
+			// Find point zone
+			point.zone = this.zones.length && point.getZone();
 		}
 		series.closestPointRangePx = closestPointRangePx;
 	},
@@ -1253,17 +1247,9 @@ H.Series = H.seriesType('line', null, { // base series options
 				pointMarkerOptions.lineWidth,
 				seriesMarkerOptions.lineWidth
 			),
-			zoneColor,
+			zoneColor = point && point.zone && point.zone.color,
 			fill,
-			stroke,
-			zone;
-
-		if (point && this.zones.length) {
-			zone = point.getZone();
-			if (zone && zone.color) {
-				zoneColor = zone.color;
-			}
-		}
+			stroke;
 
 		color = pointColorOption || zoneColor || pointColor || color;
 		fill = pointMarkerOptions.fillColor || seriesMarkerOptions.fillColor || color;
@@ -1285,7 +1271,7 @@ H.Series = H.seriesType('line', null, { // base series options
 			fill = pointStateOptions.fillColor || seriesStateOptions.fillColor || fill;
 			stroke = pointStateOptions.lineColor || seriesStateOptions.lineColor || stroke;
 		}
-		
+
 		return {
 			'stroke': stroke,
 			'stroke-width': strokeWidth,
