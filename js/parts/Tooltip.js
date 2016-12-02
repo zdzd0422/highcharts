@@ -308,8 +308,8 @@ H.Tooltip.prototype = {
 				this.shared && !inverted && points.length > 1 && mouseEvent ?
 					mouseEvent.chartY - plotTop : // place shared tooltip next to the mouse (#424)
 					inverted ? chart.plotHeight - plotX : plotY
-			]
-;		}
+			];
+		}
 
 		return map(ret, Math.round);
 	},
