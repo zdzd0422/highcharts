@@ -1311,17 +1311,15 @@ H.timeUnits = {
  * @returns {String} The formatted number.
  */
 H.numberFormat = function (number, decimals, decimalPoint, thousandsSep) {
-
 	number = +number || 0;
 	decimals = +decimals;
 
 	var lang = H.defaultOptions.lang,
 		origDec = (number.toString().split('.')[1] || '').length,
-		decimalComponent,
 		strinteger,
 		thousands,
-		absNumber = Math.abs(number),
-		ret;
+		ret,
+		roundedNumber;
 
 	if (decimals === -1) {
 		// Preserve decimals. Not huge numbers (#3793).
@@ -1330,8 +1328,14 @@ H.numberFormat = function (number, decimals, decimalPoint, thousandsSep) {
 		decimals = 2;
 	}
 
+	// Add another decimal to avoid rounding errors of float numbers. (#4573)
+	// Then use toFixed to handle rounding.
+	roundedNumber = (
+		Math.abs(number) + Math.pow(10, -Math.max(decimals, origDec) - 1)
+	).toFixed(decimals);
+
 	// A string containing the positive integer component of the number
-	strinteger = String(H.pInt(absNumber.toFixed(decimals)));
+	strinteger = String(H.pInt(roundedNumber));
 
 	// Leftover after grouping into thousands. Can be 0, 1 or 3.
 	thousands = strinteger.length > 3 ? strinteger.length % 3 : 0;
@@ -1354,11 +1358,8 @@ H.numberFormat = function (number, decimals, decimalPoint, thousandsSep) {
 
 	// Add the decimal point and the decimal component
 	if (decimals) {
-		// Get the decimal component, and add power to avoid rounding errors
-		// with float numbers (#4573)
-		decimalComponent = Math.abs(absNumber - strinteger +
-			Math.pow(10, -Math.max(decimals, origDec) - 1));
-		ret += decimalPoint + decimalComponent.toFixed(decimals).slice(2);
+		// Get the decimal component
+		ret += decimalPoint + roundedNumber.slice(-decimals);
 	}
 
 	return ret;
