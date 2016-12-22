@@ -258,9 +258,21 @@ Navigator.prototype = {
 			rendered = scroller.rendered,
 			verb;
 
-		// Don't render the navigator until we have data (#486, #4202, #5172). Don't redraw while moving the handles (#4703).
-		if (!isNumber(min) || !isNumber(max) ||	(scroller.hasDragged && !defined(pxMin))) {
+		// Don't redraw while moving the handles (#4703).
+		if (scroller.hasDragged && !defined(pxMin)) {
 			return;
+		}
+
+		// Don't render the navigator until we have data (#486, #4202, #5172).
+		if (!isNumber(min) || !isNumber(max)) {
+			// However, if navigator was already rendered, we may need to resize it
+			// For example: hidden series, but visible navigator (#6022):
+			if (defined(scroller.zoomedMax) && defined(scroller.zoomedMin)) {
+				pxMin = 0;
+				pxMax = xAxis.width;
+			} else {
+				return;
+			}
 		}
 
 		scroller.navigatorLeft = navigatorLeft = pick(
