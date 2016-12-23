@@ -267,7 +267,7 @@ Navigator.prototype = {
 		if (!isNumber(min) || !isNumber(max)) {
 			// However, if navigator was already rendered, we may need to resize it
 			// For example: hidden series, but visible navigator (#6022):
-			if (defined(scroller.zoomedMax) && defined(scroller.zoomedMin)) {
+			if (rendered) {
 				pxMin = 0;
 				pxMax = xAxis.width;
 			} else {
