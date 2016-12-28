@@ -88,3 +88,63 @@ QUnit.test('seriesTypes.treemap.drillUp', function (assert) {
         'Drill to parent'
     );
 });
+
+QUnit.test('seriesTypes.treemap.drillToNode', function (assert) {
+    var drillToNode = Highcharts.seriesTypes.treemap.prototype.drillToNode,
+        series = {
+            chart: {
+                redraw: function () {
+                    this.redrawed = true;
+                }
+            },
+            nodeMap: {
+                '': {},
+                'A': { parent: '' }
+            },
+            drillUpButton: {
+                name: undefined,
+                destroy: function () {
+                    console.log('@destroy', this)
+                    this.name = undefined;
+                    return this;
+                }
+            },
+            showDrillUpButton: function (name) {
+                this.drillUpButton.name = name;
+            }
+        };
+    drillToNode.call(series, 'A');
+    assert.strictEqual(
+        series.rootNode,
+        'A',
+        'Drill to A: Root node updated'
+    );
+    assert.strictEqual(
+        series.drillUpButton.name,
+        'A',
+        'Drill to A: drill up button displayed'
+    );
+    assert.strictEqual(
+        series.chart.redrawed,
+        true,
+        'Drill to A: do redraw by default'
+    );
+
+    series.chart.redrawed = undefined;
+    drillToNode.call(series, '', false);
+    assert.strictEqual(
+        series.rootNode,
+        '',
+        'Drill to \'\': Root node updated'
+    );
+    assert.strictEqual(
+        series.drillUpButton.name,
+        undefined,
+        'Drill to \'\': drill up button destroyed'
+    );
+    assert.strictEqual(
+        series.chart.redrawed,
+        undefined,
+        'Drill to \'\': Redraw false'
+    );
+});
