@@ -104,7 +104,6 @@ QUnit.test('seriesTypes.treemap.drillToNode', function (assert) {
             drillUpButton: {
                 name: undefined,
                 destroy: function () {
-                    console.log('@destroy', this)
                     this.name = undefined;
                     return this;
                 }
@@ -146,5 +145,46 @@ QUnit.test('seriesTypes.treemap.drillToNode', function (assert) {
         series.chart.redrawed,
         undefined,
         'Drill to \'\': Redraw false'
+    );
+});
+
+QUnit.test('seriesTypes.treemap.onClickDrillToNode', function (assert) {
+    var onClickDrillToNode = Highcharts.seriesTypes.treemap.prototype.onClickDrillToNode,
+        series = {
+            drillToNode: function (id) {
+                this.rootNode = id;
+            }
+        },
+        point = {
+            setState: function (state) {
+                this.state = state;
+            }
+        };
+
+    onClickDrillToNode(series, {});
+    assert.strictEqual(
+        series.rootNode,
+        undefined,
+        'Do not drill if point is undefined.'
+    );
+
+    onClickDrillToNode(series, { point: point });
+    assert.strictEqual(
+        series.rootNode,
+        undefined,
+        'Do not drill if point.drillId is undefined.'
+    );
+
+    point.drillId = '';
+    onClickDrillToNode.call(series, { point: point });
+    assert.strictEqual(
+        series.rootNode,
+        '',
+        'On click drill to \'\': rootNode is updated.'
+    );
+    assert.strictEqual(
+        point.state,
+        '',
+        'On click drill to \'\': point.state is updated.'
     );
 });
