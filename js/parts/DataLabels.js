@@ -307,6 +307,38 @@ Series.prototype.drawDataLabels = function () {
 };
 
 /**
+ * Decides whether or not to display a dataLabel, based on whether the point is
+ * whithin the plot area.
+ * @param  {Object} point     the point belonging to the dataLabel
+ * @param  {Object} dataLabel the dataLabel configuration object
+ * @param  {Object} opts      dataLabel options for the series
+ * @param  {Object} alignTo   the object to align to
+ * @return {boolean}          true if the dataLabel should be displayed;
+ *                            false if not
+ */
+Series.prototype.displayDataLabel = function (point, dataLabel, opts, alignTo) {
+	var series = this,
+		chart = series.chart,
+		inverted = chart.inverted,
+		plotX = pick(point.plotX, -9999),
+		plotY = pick(point.plotY, -9999);
+	return series.visible &&
+	(
+		series.forceDL ||
+		// Math.round for rounding errors (#2683), alignTo to allow column
+		// labels (#2700)
+		chart.isInsidePlot(plotX, Math.round(plotY), inverted) ||
+		(
+			alignTo && chart.isInsidePlot(
+				plotX,
+				inverted ? alignTo.x + 1 : alignTo.y + alignTo.height - 1,
+				inverted
+			)
+		)
+	);
+};
+
+/**
  * Align each individual data label
  */
 Series.prototype.alignDataLabel = function (point, dataLabel, options, alignTo, isNew) {
@@ -322,20 +354,7 @@ Series.prototype.alignDataLabel = function (point, dataLabel, options, alignTo, 
 		negRotation,
 		align = options.align,
 		rotCorr, // rotation correction
-		// Math.round for rounding errors (#2683), alignTo to allow column labels (#2700)
-		visible = 
-			this.visible &&
-			(
-				point.series.forceDL ||
-				chart.isInsidePlot(plotX, Math.round(plotY), inverted) ||
-				(
-					alignTo && chart.isInsidePlot(
-						plotX,
-						inverted ? alignTo.x + 1 : alignTo.y + alignTo.height - 1,
-						inverted
-					)
-				)
-			),
+		visible = this.displayDataLabel(point, dataLabel, options, alignTo),
 		alignAttr, // the final position;
 		justify = pick(options.overflow, 'justify') === 'justify';
 
