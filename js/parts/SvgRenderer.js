@@ -114,8 +114,10 @@ SVGElement.prototype = {
 	 * @returns {SVGElement} Returns the SVGElement for chaining.
 	 */
 	animate: function (params, options, complete) {
-		var animOptions = pick(options, this.renderer.globalAnimation, true);
-		if (animOptions) {
+		var animOptions = H.animObject(
+			pick(options, this.renderer.globalAnimation, true)
+		);
+		if (animOptions.duration !== 0) {
 			if (complete) { // allows using a callback with the global animation without overwriting it
 				animOptions.complete = complete;
 			}
@@ -932,8 +934,8 @@ SVGElement.prototype = {
 
 		// flipping affects translate as adjustment for flipping around the group's axis
 		if (inverted) {
-			translateX += wrapper.attr('width');
-			translateY += wrapper.attr('height');
+			translateX += wrapper.width;
+			translateY += wrapper.height;
 		}
 
 		// Apply translate. Nearly all transformed elements have translation, so instead
@@ -1156,9 +1158,9 @@ SVGElement.prototype = {
 					bBox = element.getBBox ?
 						// SVG: use extend because IE9 is not allowed to change width and height in case
 						// of rotation (below)
-						extend({}, element.getBBox()) :
-						// Legacy IE in export mode
-						{
+						extend({}, element.getBBox()) : {
+
+							// Legacy IE in export mode
 							width: element.offsetWidth,
 							height: element.offsetHeight
 						};
@@ -1786,6 +1788,7 @@ SVGRenderer.prototype = {
 		this.url = (isFirefox || isWebKit) && doc.getElementsByTagName('base').length ?
 				win.location.href
 					.replace(/#.*?$/, '') // remove the hash
+					.replace(/<[^>]*>/g, '') // wing cut HTML
 					.replace(/([\('\)])/g, '\\$1') // escape parantheses and quotes
 					.replace(/ /g, '%20') : // replace spaces (needed for Safari only)
 				'';
@@ -2687,7 +2690,7 @@ SVGRenderer.prototype = {
 			symbolFn = this.symbols[symbol],
 
 			// check if there's a path defined for this symbol
-			path = defined(x) && symbolFn && symbolFn(
+			path = defined(x) && symbolFn && this.symbols[symbol](
 				Math.round(x),
 				Math.round(y),
 				width,
@@ -2848,13 +2851,13 @@ SVGRenderer.prototype = {
 	 */
 	symbols: {
 		'circle': function (x, y, w, h) {
-			var cpw = 0.166 * w;
-			return [
-				'M', x + w / 2, y,
-				'C', x + w + cpw, y, x + w + cpw, y + h, x + w / 2, y + h,
-				'C', x - cpw, y + h, x - cpw, y, x + w / 2, y,
-				'Z'
-			];
+			var r = w / 2;
+			// Return a full arc
+			return this.arc(x + r, y + r, r, h / 2, {
+				start: 0,
+				end: Math.PI * 2,
+				open: false
+			});
 		},
 
 		'square': function (x, y, w, h) {
@@ -2895,7 +2898,8 @@ SVGRenderer.prototype = {
 		},
 		'arc': function (x, y, w, h, options) {
 			var start = options.start,
-				radius = options.r || w || h,
+				rx = options.r || w,
+				ry = options.r || h,
 				end = options.end - 0.001, // to prevent cos and sin of start and end from becoming equal on 360 arcs (related: #1561)
 				innerRadius = options.innerR,
 				open = options.open,
@@ -2903,34 +2907,41 @@ SVGRenderer.prototype = {
 				sinStart = Math.sin(start),
 				cosEnd = Math.cos(end),
 				sinEnd = Math.sin(end),
-				longArc = options.end - start < Math.PI ? 0 : 1;
+				longArc = options.end - start < Math.PI ? 0 : 1,
+				arc;
 
-			return [
+			arc = [
 				'M',
-				x + radius * cosStart,
-				y + radius * sinStart,
+				x + rx * cosStart,
+				y + ry * sinStart,
 				'A', // arcTo
-				radius, // x radius
-				radius, // y radius
+				rx, // x radius
+				ry, // y radius
 				0, // slanting
 				longArc, // long or short arc
 				1, // clockwise
-				x + radius * cosEnd,
-				y + radius * sinEnd,
-				open ? 'M' : 'L',
-				x + innerRadius * cosEnd,
-				y + innerRadius * sinEnd,
-				'A', // arcTo
-				innerRadius, // x radius
-				innerRadius, // y radius
-				0, // slanting
-				longArc, // long or short arc
-				0, // clockwise
-				x + innerRadius * cosStart,
-				y + innerRadius * sinStart,
-
-				open ? '' : 'Z' // close
+				x + rx * cosEnd,
+				y + ry * sinEnd
 			];
+
+			if (defined(innerRadius)) {
+				arc.push(
+					open ? 'M' : 'L',
+					x + innerRadius * cosEnd,
+					y + innerRadius * sinEnd,
+					'A', // arcTo
+					innerRadius, // x radius
+					innerRadius, // y radius
+					0, // slanting
+					longArc, // long or short arc
+					0, // clockwise
+					x + innerRadius * cosStart,
+					y + innerRadius * sinStart
+				);
+			}
+
+			arc.push(open ? '' : 'Z'); // close
+			return arc;
 		},
 
 		/**

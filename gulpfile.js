@@ -87,7 +87,7 @@ const scripts = () => {
     const base = './js/masters/';
     const fileOptions = getFileOptions(base);
 
-    return build({
+    build({
         base: base,
         debug: debug,
         fileOptions: fileOptions,
@@ -96,6 +96,8 @@ const scripts = () => {
         type: type,
         version: version
     });
+
+    // return commandLine('./node_modules/.bin/babel ./code/highcharts.src.js -d .');
 };
 
 /**
@@ -331,7 +333,7 @@ const compileScripts = () => {
  */
 const compileLib = () => {
     const sourceFolder = './vendor/';
-    const files = ['canvg.src.js', 'rgbcolor.src.js'];
+    const files = ['canvg.src.js'];
     return compile(files, sourceFolder)
         .then(console.log)
         .catch(console.log);
@@ -393,7 +395,7 @@ const copyToDist = () => {
     });
 
     // Copy lib files to the distribution packages. These files are used in the offline-export.
-    ['jspdf.js', 'jspdf.src.js', 'svg2pdf.js', 'svg2pdf.src.js', 'canvg.js', 'canvg.src.js', 'rgbcolor.js', 'rgbcolor.src.js'].forEach((path) => {
+    ['jspdf.js', 'jspdf.src.js', 'svg2pdf.js', 'svg2pdf.src.js', 'canvg.js', 'canvg.src.js'].forEach((path) => {
         const content = fs.readFileSync(libFolder + path);
         ['highcharts', 'highstock', 'highmaps'].forEach((lib) => {
             U.writeFile(distFolder + lib + '/code/lib/' + path, content);
@@ -548,36 +550,49 @@ const filesize = () => {
         const p = types.map(t => (t === 'css' ? 'js/' : '') + name);
         return arr.concat(p);
     }, []);
-    const getGzipSize = (file) => {
+    const getGzipSize = (content) => {
         const gzipSize = require('gzip-size');
-        const getFile = require('./assembler/utilities.js').getFile;
-        const content = getFile(file);
         return gzipSize.sync(content);
     };
-    const pad = (str, x) => ' '.repeat(x) + str;
-    const report = (name, newSize, headSize) => {
-        const diff = newSize - headSize;
-        const sign = diff > 0 ? '+' : '';
-        const color = diff > 0 ? 'yellow' : 'green';
+    // const pad = (str, x) => ' '.repeat(x) + str;
+    const padRight = (str, x) => str + ' '.repeat(x - str.length);
+    const printRow = (sizes, content) => content.map((c, i) => padRight(c.toString(), sizes[i])).join('');
+    const report = (name, current, head) => {
+        const colsizes = [10, 10, 10, 10];
+        const diff = (a, b) => {
+            const d = a - b;
+            const sign = d > 0 ? '+' : '';
+            // const color = diff > 0 ? 'yellow' : 'green';
+            return sign + d;
+        };
         console.log([
             '',
-            colors.cyan(name) + colors.gray('(gzipped)'),
-            'HEAD: ' + pad(headSize, 7) + ' B',
-            'New:  ' + pad(newSize, 7) + ' B',
-            colors[color]('Diff: ' + pad(sign + diff, 7) + ' B'),
+            colors.cyan(name),
+            printRow(colsizes, ['', 'gzipped', 'compiled', 'size']),
+            printRow(colsizes, ['New:', current.gzip, current.compiled, current.size]),
+            printRow(colsizes, ['HEAD:', head.gzip, head.compiled, head.size]),
+            printRow(colsizes, ['Diff:', diff(current.gzip, head.gzip) + 'B', diff(current.compiled, head.compiled) + 'B', diff(current.size, head.size) + 'B']),
             ''
         ].join('\n'));
     };
+
     const runFileSize = (obj, key) => {
         return Promise.resolve(scripts())
         .then(() => compile(files, sourceFolder))
         .then(() => {
             return files.reduce((o, n) => {
+                const getFile = require('./assembler/utilities.js').getFile;
                 const filename = n.replace('.src.js', '.js');
+                const compiled = getFile(sourceFolder + filename);
+                const content = getFile(sourceFolder + n);
                 if (!o[filename]) {
                     o[filename] = {};
                 }
-                o[filename][key] = getGzipSize(sourceFolder + filename);
+                o[filename][key] = {
+                    gzip: getGzipSize(compiled),
+                    size: content.length,
+                    compiled: compiled.length
+                };
                 return o;
             }, obj);
         });

@@ -166,10 +166,7 @@ H.StockChart = H.stockChart = function (a, b, c) {
 		options, // user's options
 
 		{ // forced options
-			isStock: true, // internal flag
-			chart: {
-				inverted: false
-			}
+			isStock: true // internal flag
 		}
 	);
 
@@ -553,11 +550,16 @@ seriesProto.setCompare = function (compare) {
 		
 		if (value !== undefined && compareValue !== undefined) { // #2601, #5814
 
-			// get the modified value
-			value = compare === 'value' ?
-				value - compareValue : // compare value
-				value = 100 * (value / compareValue) - 100; // compare percent
-
+			// Get the modified value
+			if (compare === 'value') {
+				value -= compareValue;
+			
+			// Compare percent
+			} else {
+				value = 100 * (value / compareValue) - 
+					(this.options.compareBase === 100 ? 0 : 100);
+			}
+			
 			// record for tooltip etc.
 			if (point) {
 				point.change = value;
@@ -674,13 +676,19 @@ Point.prototype.tooltipFormatter = function (pointFormat) {
 
 
 /**
- * Extend the Series prototype to create a separate series clip box. This is related
- * to using multiple panes, and a future pane logic should incorporate this feature (#2754).
+ * Extend the Series prototype to create a separate series clip box. This is
+ * related to using multiple panes, and a future pane logic should incorporate
+ * this feature (#2754).
  */
 wrap(Series.prototype, 'render', function (proceed) {
-	// Only do this on not 3d (#2939, #5904) nor polar (#6057) charts, and only if the series type handles clipping
-	// in the animate method (#2975).
-	if (!(this.chart.is3d && this.chart.is3d()) && !this.chart.polar && this.xAxis) {
+	// Only do this on not 3d (#2939, #5904) nor polar (#6057) charts, and only
+	// if the series type handles clipping in the animate method (#2975).
+	if (
+		!(this.chart.is3d && this.chart.is3d()) &&
+		!this.chart.polar &&
+		this.xAxis &&
+		!this.xAxis.isRadial // Gauge, #6192
+	) {
 
 		// First render, initial clip box
 		if (!this.clipBox && this.animate) {

@@ -235,16 +235,43 @@ H.Series = H.seriesType('line', null, { // base series options
 			lastSeries = chartSeries[chartSeries.length - 1];
 		}
 		series._i = pick(lastSeries && lastSeries._i, -1) + 1;
-		chartSeries.push(series);
+		
+		// Insert the series and re-order all series above the insertion point.
+		chart.orderSeries(this.insert(chartSeries));
+	},
 
-		// Sort series based on index
-		chart.sortSeries(this);
+	/**
+	 * Insert the series in a collection with other series, either the chart
+	 * series or yAxis series, in the correct order according to the index 
+	 * option.
+	 * @param  {Array} collection A collection of series.
+	 * @returns {Number} The index of the series in the collection.
+	 */
+	insert: function (collection) {
+		var indexOption = this.options.index,
+			i;
 
-		each(chartSeries, function (series, i) {
-			series.index = i;
-			series.name = series.name || 'Series ' + (i + 1);
-		});
+		// Insert by index option
+		if (isNumber(indexOption)) {
+			i = collection.length;
+			while (i--) {
+				// Loop down until the interted element has higher index
+				if (indexOption >=
+						pick(collection[i].options.index, collection[i]._i)) {
+					collection.splice(i + 1, 0, this);
+					break;
+				}
+			}
+			if (i === -1) {
+				collection.unshift(this);
+			}
+			i = i + 1;
 
+		// Or just push it to the end
+		} else {
+			collection.push(this);
+		}
+		return pick(i, collection.length - 1);
 	},
 
 	/**
@@ -273,7 +300,7 @@ H.Series = H.seriesType('line', null, { // base series options
 						(seriesOptions[AXIS] === undefined && axisOptions.index === 0)) {
 
 					// register this series in the axis.series lookup
-					axis.series.push(series);
+					series.insert(axis.series);
 
 					// set this series.xAxis or series.yAxis reference
 					series[AXIS] = axis;
@@ -1191,8 +1218,7 @@ H.Series = H.seriesType('line', null, { // base series options
 	markerAttribs: function (point, state) {
 		var seriesMarkerOptions = this.options.marker,
 			seriesStateOptions,
-			pointOptions = point && point.options,
-			pointMarkerOptions = (pointOptions && pointOptions.marker) || {},
+			pointMarkerOptions = point.marker || {},
 			pointStateOptions,
 			radius = pick(
 				pointMarkerOptions.radius,
@@ -1344,6 +1370,7 @@ H.Series = H.seriesType('line', null, { // base series options
 			chart.hoverSeries = null;
 		}
 		erase(chart.series, series);
+		chart.orderSeries();
 
 		// clear all members
 		for (prop in series) {
@@ -1665,14 +1692,11 @@ H.Series = H.seriesType('line', null, { // base series options
 			remover;
 
 		function setInvert() {
-			var size = {
-				width: series.yAxis.len,
-				height: series.xAxis.len
-			};
-
 			each(['group', 'markerGroup'], function (groupName) {
 				if (series[groupName]) {
-					series[groupName].attr(size).invert(inverted);
+					series[groupName].width = series.yAxis.len;
+					series[groupName].height = series.xAxis.len;
+					series[groupName].invert(inverted);
 				}
 			});
 		}

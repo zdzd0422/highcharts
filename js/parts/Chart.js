@@ -41,7 +41,6 @@ var addEvent = H.addEvent,
 	seriesTypes = H.seriesTypes,
 	splat = H.splat,
 	svg = H.svg,
-	stableSort = H.stableSort,
 	syncTimeout = H.syncTimeout,
 	win = H.win,
 	Renderer = H.Renderer;
@@ -190,19 +189,22 @@ Chart.prototype = {
 	},
 
 	/**
-	 * Sort series based on their inferred index or index option.
-	 * @param {Series} [newSeries] The new series that is added prior to calling
-	 *    the sorting function.
+	 * Order all series above a given index. When series are added and ordered
+	 * by configuration, only the last series is handled (#248, #1123, #2456,
+	 * #6112). This function is called on series initialization and destroy.
+	 *
+	 * @param {number} fromIndex - If this is given, only the series above this
+	 *    index are handled.
 	 */
-	sortSeries: function (newSeries) {
-		function sortByIndex(a, b) {
-			return pick(a.options.index, a._i) - pick(b.options.index, b._i);
-		}
-
-		// #248, #1123, #2456
-		stableSort(this.series, sortByIndex);
-		if (newSeries.yAxis) {
-			stableSort(newSeries.yAxis.series, sortByIndex);
+	orderSeries: function (fromIndex) {
+		var series = this.series,
+			i = fromIndex || 0;
+		for (; i < series.length; i++) {
+			if (series[i]) {
+				series[i].index = i;
+				series[i].name = series[i].name || 
+					'Series ' + (series[i].index + 1);
+			}
 		}
 	},
 
@@ -246,6 +248,11 @@ Chart.prototype = {
 			renderer = chart.renderer,
 			isHiddenChart = renderer.isHidden(),
 			afterRedraw = [];
+
+		// Handle responsive rules, not only on resize (#6130)
+		if (chart.setResponsive) {
+			chart.setResponsive(false);
+		}
 			
 		H.setAnimation(animation, chart);
 		
@@ -389,7 +396,7 @@ Chart.prototype = {
 			i;
 
 		function itemById(item) {
-			return item.options.id === id;
+			return item.id === id || (item.options && item.options.id === id);
 		}
 
 		ret = 
@@ -792,8 +799,8 @@ Chart.prototype = {
 		}
 
 		// adjust for scroller
-		if (chart.extraBottomMargin) {
-			chart.marginBottom += chart.extraBottomMargin;
+		if (chart.extraMargin) {
+			chart[chart.extraMargin.type] = (chart[chart.extraMargin.type] || 0) + chart.extraMargin.value;
 		}
 		if (chart.extraTopMargin) {
 			chart.plotTop += chart.extraTopMargin;
@@ -933,9 +940,6 @@ Chart.prototype = {
 		chart.layOutTitles(); // #2857
 		chart.getMargins();
 
-		if (chart.setResponsive) {
-			chart.setResponsive(false);
-		}
 		chart.redraw(animation);
 
 
@@ -1453,9 +1457,12 @@ Chart.prototype = {
 		}
 
 		// ==== Destroy chart properties:
-		each(['title', 'subtitle', 'chartBackground', 'plotBackground', 'plotBGImage',
-				'plotBorder', 'seriesGroup', 'clipRect', 'credits', 'pointer',
-				'rangeSelector', 'legend', 'resetZoomButton', 'tooltip', 'renderer'], function (name) {
+		each([
+			'title', 'subtitle', 'chartBackground', 'plotBackground',
+			'plotBGImage', 'plotBorder', 'seriesGroup', 'clipRect', 'credits',
+			'pointer', 'rangeSelector', 'legend', 'resetZoomButton', 'tooltip',
+			'renderer'
+		], function (name) {
 			var prop = chart[name];
 
 			if (prop && prop.destroy) {
@@ -1575,8 +1582,8 @@ Chart.prototype = {
 
 		fireEvent(this, 'load');
 
-		// Set up auto resize
-		if (this.options.chart.reflow !== false) {
+		// Set up auto resize, check for not destroyed (#6068)
+		if (defined(this.index) && this.options.chart.reflow !== false) {
 			this.initReflow();
 		}
 
