@@ -1335,13 +1335,25 @@ SVGElement.prototype = {
 			parentToClean = wrapper.renderer.isSVG && element.nodeName === 'SPAN' && wrapper.parentGroup,
 			grandParent,
 			key,
-			i;
+			i,
+			elementsWithClipPaths;
 
 		// remove events
 		element.onclick = element.onmouseout = element.onmouseover = element.onmousemove = element.point = null;
 		stop(wrapper); // stop running animations
 
 		if (wrapper.clipPath) {
+			// Look for existing references to this clipPath and remove them
+			// before destroying the element
+			elementsWithClipPaths = wrapper.element.ownerSVGElement
+										.querySelectorAll('[clip-path]');
+			each(elementsWithClipPaths, function (el) {
+				if (el.getAttribute('clip-path').indexOf(
+						wrapper.clipPath.element.id) > -1) {
+					el.removeAttribute('clip-path');
+				}
+			});
+
 			wrapper.clipPath = wrapper.clipPath.destroy();
 		}
 
