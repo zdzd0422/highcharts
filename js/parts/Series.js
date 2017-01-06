@@ -1081,6 +1081,7 @@ H.Series = H.seriesType('line', null, { // base series options
 					chart[sharedClipKey] = chart[sharedClipKey].destroy();
 				}
 				if (chart[sharedClipKey + 'm']) {
+					this.markerGroup.clip();
 					chart[sharedClipKey + 'm'] = chart[sharedClipKey + 'm'].destroy();
 				}
 			}
@@ -1862,7 +1863,7 @@ H.Series = H.seriesType('line', null, { // base series options
 			}, animDuration);
 		}
 
-		series.isDirty = series.isDirtyData = false; // means data is in accordance with what you see
+		series.isDirty = false; // means data is in accordance with what you see
 		// (See #322) series.isDirty = series.isDirtyData = false; // means data is in accordance with what you see
 		series.hasRendered = true;
 	},

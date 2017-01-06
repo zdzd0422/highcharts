@@ -26,6 +26,7 @@ var SVGElement,
 	erase = H.erase,
 	grep = H.grep,
 	hasTouch = H.hasTouch,
+	inArray = H.inArray,
 	isArray = H.isArray,
 	isFirefox = H.isFirefox,
 	isMS = H.isMS,
@@ -692,7 +693,12 @@ SVGElement.prototype = {
 			n,
 			serializedCss = '',
 			hyphenate,
-			hasNew = !oldStyles;
+			hasNew = !oldStyles,
+			// These CSS properties are interpreted internally by the SVG
+			// renderer, but are not supported by SVG and should not be added to
+			// the DOM. In styled mode, no CSS should find its way to the DOM
+			// whatsoever (#6173).
+			svgPseudoProps = ['textOverflow', 'width'];
 
 		// convert legacy
 		if (styles && styles.color) {
@@ -736,9 +742,15 @@ SVGElement.prototype = {
 					return '-' + b.toLowerCase();
 				};
 				for (n in styles) {
-					serializedCss += n.replace(/([A-Z])/g, hyphenate) + ':' + styles[n] + ';';
+					if (inArray(n, svgPseudoProps) === -1) {
+						serializedCss +=
+							n.replace(/([A-Z])/g, hyphenate) + ':' +
+							styles[n] + ';';
+					}
 				}
-				attr(elem, 'style', serializedCss); // #1881
+				if (serializedCss) {
+					attr(elem, 'style', serializedCss); // #1881
+				}
 			}
 
 
@@ -2015,6 +2027,9 @@ SVGRenderer.prototype = {
 			textLineHeight = textStyles && textStyles.lineHeight,
 			textOutline = textStyles && textStyles.textOutline,
 			ellipsis = textStyles && textStyles.textOverflow === 'ellipsis',
+			noWrap = textStyles && textStyles.whiteSpace === 'nowrap',
+			fontSize = textStyles && textStyles.fontSize,
+			textCache,
 			i = childNodes.length,
 			tempParent = width && !wrapper.added && this.box,
 			getLineHeight = function (tspan) {
@@ -2022,7 +2037,7 @@ SVGRenderer.prototype = {
 				/*= if (build.classic) { =*/
 				fontSizeStyle = /(px|em)$/.test(tspan && tspan.style.fontSize) ?
 					tspan.style.fontSize :
-					((textStyles && textStyles.fontSize) || renderer.style.fontSize || 12);
+					(fontSize || renderer.style.fontSize || 12);
 				/*= } =*/
 
 				return textLineHeight ? 
@@ -2036,6 +2051,22 @@ SVGRenderer.prototype = {
 			unescapeAngleBrackets = function (inputStr) {
 				return inputStr.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 			};
+
+		// The buildText code is quite heavy, so if we're not changing something
+		// that affects the text, skip it (#6113).
+		textCache = [
+			textStr,
+			ellipsis,
+			noWrap,
+			textLineHeight,
+			textOutline,
+			fontSize,
+			width
+		].join(',');
+		if (textCache === wrapper.textCache) {
+			return;
+		}
+		wrapper.textCache = textCache;
 
 		/// remove old text
 		while (i--) {
@@ -2152,7 +2183,6 @@ SVGRenderer.prototype = {
 							// Check width and apply soft breaks or ellipsis
 							if (width) {
 								var words = span.replace(/([^\^])-/g, '$1- ').split(' '), // #1273
-									noWrap = textStyles.whiteSpace === 'nowrap',
 									hasWhiteSpace = spans.length > 1 || lineNo || (words.length > 1 && !noWrap),
 									tooLong,
 									actualWidth,
@@ -2851,9 +2881,8 @@ SVGRenderer.prototype = {
 	 */
 	symbols: {
 		'circle': function (x, y, w, h) {
-			var r = w / 2;
 			// Return a full arc
-			return this.arc(x + r, y + r, r, h / 2, {
+			return this.arc(x + w / 2, y + h / 2, w / 2, h / 2, {
 				start: 0,
 				end: Math.PI * 2,
 				open: false

@@ -8,7 +8,7 @@ QUnit.test('Verify that references to unused clip paths are removed after animat
                     chart.container.querySelectorAll('[clip-path]'),
                     function (clipPath) {
                         var p = clipPath.getAttribute('clip-path');
-                        if (Highcharts.inArray(p, clipPathList) < 0) {
+                        if (p !== 'none' && Highcharts.inArray(p, clipPathList) < 0) {
                             clipPathList.push(p);
                         }
                     }
