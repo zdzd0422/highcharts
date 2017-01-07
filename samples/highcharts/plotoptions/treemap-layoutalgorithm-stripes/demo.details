@@ -1,5 +1,4 @@
----
- name: Treemap Demo
- authors:
-   - Jon Arild Nygård
-...
+name: Treemap Demo
+authors:
+  - Jon Arild Nygård
+js_wrap: b

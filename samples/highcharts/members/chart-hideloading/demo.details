@@ -1,6 +1,5 @@
----
- name: Highcharts Demo
- authors:
-   - Torstein Hønsi
- skipTest: true
-...
+name: Highcharts Demo
+authors:
+  - Torstein Hønsi
+skipTest: true
+js_wrap: b

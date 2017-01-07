@@ -1,6 +1,5 @@
----
- name: Highcharts Demo
- authors:
-   - Øystein Moseng
- requiresManualTesting: true
-...
+name: Highcharts Demo
+authors:
+  - Øystein Moseng
+requiresManualTesting: true
+js_wrap: b

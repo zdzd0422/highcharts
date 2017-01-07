@@ -1,6 +1,5 @@
----
- name: Highcharts Demo
- authors:
-   - Torstein Hønsi
- compareTooltips: true
-...
+name: Highcharts Demo
+authors:
+  - Torstein Hønsi
+compareTooltips: true
+js_wrap: b

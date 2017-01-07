@@ -1,6 +1,5 @@
----
- name: Highcharts Demo
- authors:
-   - Torstein Hønsi
- exportInnerHTML: true
-...
+name: Highcharts Demo
+authors:
+  - Torstein Hønsi
+exportInnerHTML: true
+js_wrap: b

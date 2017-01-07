@@ -1,5 +1,4 @@
----
- name: Highcharts Demo
- authors:
-   - Lars Cabrera
-...
+name: Highcharts Demo
+authors:
+  - Lars Cabrera
+js_wrap: b
