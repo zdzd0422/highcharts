@@ -6,15 +6,12 @@ var fs = require('fs-extra'),
 
 // Asynchronous function to read folders and files recursively
 
-// Need to make a list for all the folders that does not have demo.details
 // Need to make a list of all the demo.js files
 // Need a regex to count the $ in a demo.js files
 // Need to remove documentReady when only one $ usage in demo.js files
 // Need to remove spaces for indenting these files
 
 var demoJSPath = "../../samples/highcharts";
-
-var lolPath = '../../../../Desktop/lol/file.details';
 
 findAllFiles(demoJSPath, function(err, result){
   var demoJSFiles = [];
@@ -32,22 +29,13 @@ findAllFiles(demoJSPath, function(err, result){
   }
 });
 
-// findDirWithoutFile(demoJSPath, function(err,result){
-//     var demoJSFiles = [];
-//     for(i=0;i<result.length;i++) {
-//         
-//         var filename = result[i] + "/demo.details"
-//         
-//         fs.outputFile(filename, 'hello!', function (err) {
-//             console.log(err) // => null
-//             
-//             fs.readFile(file, 'utf8', function (err, data) {
-//                 console.log(data) // => hello!
-//             })
-//         })
-//         console.log(result[i]);
-//     }
-// });
+findDirWithoutFile(demoJSPath, function(err, result){
+    var demoJSFiles = [];
+    for(i = 0; i < result.length; i++) {
+        var filePath = result[i] + "/demo.details"
+        writeDemoDetails(filePath);
+    }
+});
 
 function findAllFiles(dir, done) {
     var results = [];
@@ -107,7 +95,7 @@ function findDirWithoutFile(dir, done) {
     });
 }
 
-function writeDemoDetails(path, obj){
+function writeDemoDetails(filePath, obj){
     if (! obj) {
         // Write this thing to disk
         var defaultDemoDetailsContent = "" + 
@@ -118,20 +106,19 @@ function writeDemoDetails(path, obj){
             " js_wrap: b" + "\n" + 
             "...";         
         
-        obj = parse(defaultDemoDetailsContent);
+        obj = jsyaml.safeLoad(defaultDemoDetailsContent);
     }
     try {
-        fs.outputFileSync(path, jsyaml.safeDump(obj));
+        fs.outputFileSync(filePath, jsyaml.safeDump(obj));
     } catch (ex) {
-        console.log("Error writing ", path);
+        console.log("Error writing ", filePath);
     }
-    
 }
 
-function readDemoDetails(path){
+function readDemoDetails(filePath){
     try {
-        return jsyaml.safeLoad(fs.readFileSync(path, 'utf8'));
+        return jsyaml.safeLoad(fs.readFileSync(filePath, 'utf8'));
     } catch (ex) {
-        console.log("Error parsing", path);
+        console.log("Error parsing", filePath);
     }
 }
