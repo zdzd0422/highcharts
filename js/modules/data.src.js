@@ -392,7 +392,8 @@ Highcharts.extend(Data.prototype, {
     			};    		
 
     		Highcharts.some(lines, function (columnStr, i) {    			
-    			if (i > 3) {
+    			//We should be able to detect dateformats within 13 rows
+    			if (i > 13) {
     				return true;
     			}
     			parseRow(columnStr, i, true, callbacks);
@@ -428,8 +429,6 @@ Highcharts.extend(Data.prototype, {
 			}
     		
 			return guessed;
-    		console.log(potDelimiters);
-    		console.log(dataTypes);
     	}
 
     	/* Tries to guess the date format
@@ -485,23 +484,23 @@ Highcharts.extend(Data.prototype, {
 			    				} else if (!guessedFormat[j].length) {
 			    					guessedFormat[j] = 'mm';
 			    				}		    					
-		    				}
-		    				
+		    				}		    				
 	    				}
 	    			}
 
 	    			if (madeDeduction) {
 	    				
-	    				calculatedFormat = '';
+	    				calculatedFormat = guessedFormat.join('/');
 
-	    				each(guessedFormat, function (thing, i) {
-	    					if (thing.length) {    						
-	    						if (i > 0) {
-	    							calculatedFormat += '/';
-	    						}
-	    						calculatedFormat += thing.trim();
-	    					}
-	    				});
+	    				// calculatedFormat = '';
+	    				// each(guessedFormat, function (thing, i) {
+	    				// 	if (thing.length) {    						
+	    				// 		if (i > 0) {
+	    				// 			calculatedFormat += '/';
+	    				// 		}
+	    				// 		calculatedFormat += thing.trim();
+	    				// 	}
+	    				// });
 
 	    				console.log('calculated format', calculatedFormat, thing);
 	    				return calculatedFormat;
@@ -526,7 +525,6 @@ Highcharts.extend(Data.prototype, {
 				.replace(/\r\n/g, '\n') // Unix
 				.replace(/\r/g, '\n') // Mac
 				.split(options.lineDelimiter || '\n');
-
 
 			if (startRow < 0) {
 				startRow = 0;

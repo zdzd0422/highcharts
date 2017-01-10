@@ -1,4 +1,4 @@
-QUnit.test('csv-quoted-data', function (assert) {
+QUnit.test('csv-datetime-short-year', function (assert) {
     var chart = Highcharts.charts[0];
 
     assert.strictEqual(
@@ -8,8 +8,20 @@ QUnit.test('csv-quoted-data', function (assert) {
     );
 
     assert.strictEqual(
-        (chart.xAxis[0].names).length,
-        3,
-        'Has categories'
+        (chart.options.series[0].data[0][1]),
+        4,
+        'Point one is correct'
+    );
+
+    assert.strictEqual(
+        (chart.options.series[0].data[1][1]),
+        6,
+        'Point two is correct'
+    );
+
+    assert.strictEqual(
+        (chart.options.series[0].data[2][1]),
+        7,
+        'Point three is correct'
     );
 });
