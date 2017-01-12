@@ -10,7 +10,12 @@ import './Point.js';
 var each = H.each,
 	Point = H.Point,
 	seriesType = H.seriesType,
-	seriesTypes = H.seriesTypes;
+	seriesTypes = H.seriesTypes,
+	defaultOptions = H.defaultOptions;
+
+H.extend(defaultOptions.lang, {
+	ohlcLabels: ['Open', 'High', 'Low', 'Close'] // docs
+});
 
 /**
  * The ohlc series type.
@@ -21,19 +26,21 @@ var each = H.each,
 seriesType('ohlc', 'column', {
 	lineWidth: 1,
 	tooltip: {
-		/*= if (!build.classic) { =*/
-		pointFormat: '<span class="highcharts-color-{point.colorIndex}">\u25CF</span> <b> {series.name}</b><br/>' +
-			'Open: {point.open}<br/>' +
-			'High: {point.high}<br/>' +
-			'Low: {point.low}<br/>' +
-			'Close: {point.close}<br/>',
-		/*= } else { =*/
-		pointFormat: '<span style="color:{point.color}">\u25CF</span> <b> {series.name}</b><br/>' +
-			'Open: {point.open}<br/>' +
-			'High: {point.high}<br/>' +
-			'Low: {point.low}<br/>' +
-			'Close: {point.close}<br/>'
-		/*= } =*/
+		pointFormatter: function () {
+			var spanTag,
+				point = this,
+				labels = point.series.chart.options.lang.ohlcLabels;
+			/*= if (!build.classic) { =*/
+			spanTag = '<span class="highcharts-color-' + point.colorIndex;
+			/*= } else { =*/
+			spanTag = '<span style="color:' + point.color;
+			/*= } =*/
+			return spanTag + '">\u25CF</span> <b> ' + point.series.name + 
+				'</b><br/>' +
+				H.map(['open', 'high', 'low', 'close'], function (key, i) {
+					return labels[i] + ': ' + point[key];
+				}).join('<br/>');
+		}
 	},
 	threshold: null,
 	/*= if (build.classic) { =*/
