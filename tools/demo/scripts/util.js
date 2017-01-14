@@ -1,7 +1,5 @@
 var fs = require('fs-extra'),
-    jsyaml = require('js-yaml'),
-    esprima = require('esprima'),
-    escodegen = require('escodegen');
+    jsyaml = require('js-yaml');
 
 
 export function findAllFiles(dir, done) {

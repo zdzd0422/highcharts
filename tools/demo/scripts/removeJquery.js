@@ -1,10 +1,7 @@
 import * as util from './util';
-import esprima from 'esprima';
-import escodegen from 'escodegen';
-import traverse from 'traverse';
 import beautify from 'js-beautify';
 
-// let demoPath = '../../../../Desktop/lol'
+//let demoPath = '../../../../Desktop/lol'
 let demoPath = '../../samples/highcharts';
 let fileName = 'demo.js'
 
@@ -13,96 +10,78 @@ util.findAllFiles(demoPath, (err, result) => {
         if(result[i].indexOf(fileName) >= 0) {
             console.log('Processing file: ' + result[i] + '...')
             let fileContent = util.readFile(result[i]);
-            let ast = esprima.parse(fileContent, { comment: true , attachComment: true });
-            let innerArray = [];
-            let arrayIndex = -1;
-            ast.body.forEach((element, index) => {
-                if (element.type === 'ExpressionStatement' 
-                && element.expression
-                && element.expression.arguments 
-                && element.expression.arguments.length === 1 
-                && element.expression.callee
-                && element.expression.callee.name === '$'
-                && element.expression.arguments[0].type === 'FunctionExpression') {
+            
+            // Search for $(function
+            let onReadyIndex = fileContent.indexOf('$(function');
+            if(onReadyIndex < 0){
+                continue;
+            }
+            
+            let parenthesis = {
+                count: 0,
+                modified: false,
+                closeIndex: undefined,
+                openIndex: undefined
+            }
+            
+            let curly = {
+                count: 0,
+                modified: false,
+                closeIndex: undefined,
+                openIndex: undefined
+            }
+            
+            function onReadyContent(parenthesis, curly, fileContent){
+                for(let j = onReadyIndex; j < fileContent.length; j++){
+                    let char = fileContent.charAt(j);
+                    switch(char){
+                        case '(':
+                            parenthesis.count++;
+                            parenthesis.modified = true;
+                            break;
+                        
+                        case ')':
+                            parenthesis.count--;
+                            break;
+                        
+                        case '{':
+                            curly.count++;
+                            curly.modified = true;
+                            break;
+                            
+                        case '}':
+                            curly.count--;
+                            break;
+                    }
                     
-                    innerArray = element.expression.arguments[0].body.body.slice();
-                    arrayIndex = index;    
-                }
-            });
-            
-            ast.body = ast.body.slice(0,arrayIndex)
-            .concat(innerArray)
-            .concat(ast.body.slice(arrayIndex + 1, ast.body.length));
-            
-            
-            // Traverse through AST and look for trailing or leading comments.
-            let commentSet = new Set();
-            traverse(ast).forEach(function (x) {
-                if(! x) {
-                    return;
-                }
-                if (x.hasOwnProperty('leadingComments')) {
-                    x.leadingComments.forEach(comment => {
-                        let commentString = JSON.stringify(comment);
-                        if (! commentSet.has(commentString)) {
-                           commentSet.add(commentString);
-                        }
-                    });
-                }
-            });
-            
-            traverse(ast).forEach(function(x) {
-                if(! x) {
-                    return;
-                }
-                if (x.hasOwnProperty('trailingComments')) {
-                    let newTrailingComments = [];
-                    x.trailingComments.forEach(comment => {
-                        let commentString = JSON.stringify(comment);
-                        if (! commentSet.has(commentString)) {
-                            newTrailingComments.push(comment);
-                        }
-                        let res = Object.assign({}, x);
-                        res.trailingComments = newTrailingComments;
-                        this.update(res);
-                    });
-                }
-            });
-            
-            let demoContent = escodegen.generate(ast, { comment: true });
-            
-            let arrayStart = [];
-            for(let i = 0; i < demoContent.length; i++){
-                let char = demoContent.charAt(i);
-                if(char === '['){
-                    arrayStart.push(i);
-                }
-            }
-
-            const illegalSymbol = char => {
-                return char === '[' || char === ']' ;
-            }
-            
-            let arrayRanges = [];
-            arrayStart.forEach(i => {
-                for (let y = i + 1; y < demoContent.length; y++) {
-                    let char = demoContent.charAt(y);
-                    if (char === ']'){
-                        arrayRanges.push({ from: i, to: y });
-                        break;
+                    if(parenthesis.count === 1 && parenthesis.openIndex === undefined){
+                        parenthesis.openIndex = j;
                     }
-                    if (illegalSymbol(char)) {
-                        break;
+                    
+                    if(curly.count === 1 && curly.openIndex === undefined){
+                        curly.openIndex = j;
+                    }
+                    
+                    if(parenthesis.count === 0 && parenthesis.modified && parenthesis.closeIndex === undefined){
+                        parenthesis.closeIndex = j;
+                    }
+                    
+                    if(curly.count === 0 && curly.modified && curly.closeIndex === undefined){
+                        curly.closeIndex = j;
                     }
                 }
-            });
 
-            arrayRanges = arrayRanges.reverse();
-            arrayRanges.forEach(range => {                
-                let prettySubstring = demoContent.substring(range.from, range.to + 1).replace(/\s/g,'').replace(/,/g, ', ');
-                demoContent = demoContent.substring(0, range.from) + prettySubstring + demoContent.substring(range.to + 1, demoContent.length);
-            });
-            util.writeFile(result[i], beautify(demoContent));
+            }
+            
+            function cut(from, upTo, fileContent) {
+                return fileContent.substring(0, from).concat(fileContent.substring(upTo, fileContent.length))
+            }
+            
+            onReadyContent(parenthesis, curly, fileContent);
+            fileContent = cut(curly.closeIndex, parenthesis.closeIndex +2, fileContent);
+            fileContent = cut(onReadyIndex, curly.openIndex +1, fileContent);
+            
+            util.writeFile(result[i], beautify(fileContent));
         }
     }
 });
