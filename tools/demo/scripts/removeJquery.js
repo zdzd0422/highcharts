@@ -1,7 +1,6 @@
 import * as util from './util';
 import beautify from 'js-beautify';
 
-//let demoPath = '../../../../Desktop/lol'
 let demoPath = '../../samples/highcharts';
 let fileName = 'demo.js'
 
