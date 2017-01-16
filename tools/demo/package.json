@@ -5,7 +5,8 @@
   "scripts": {
     "start": "babel-node script.js",
     "demo:jquery:remove": "babel-node scripts/removeJquery.js",
-    "demo:details": "babel-node scripts/processDemoDetails.js"
+    "demo:details": "babel-node scripts/processDemoDetails.js",
+    "demo:fix:html": "babel-node scripts/processDemoHtml"
   },
   "author": "Henrik Skar",
   "license": "MIT",

@@ -4,5 +4,3 @@ import * as util from './scripts/util';
 /* eslint-env node*/
 var fs = require('fs-extra'),
 jsyaml = require('js-yaml'),
-esprima = require('esprima'),
-escodegen = require('escodegen');

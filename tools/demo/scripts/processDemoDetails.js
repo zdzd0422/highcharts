@@ -9,7 +9,7 @@ let defaultDemoDetailsContent = '' +
 '...';
 
 let demoPath = '../../samples/highcharts';
-let fileName = 'demo.details'
+let fileName = 'demo.details';
 
 util.findAllFiles(demoPath, (err, result) => {        
     for(let i = 0; i < result.length; i++) {
