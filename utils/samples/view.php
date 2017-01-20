@@ -449,11 +449,13 @@ function getResources() {
 					href="view.php?path=<?php echo $path ?>&amp;time=1">Time</a>
 				
 
-				<a class="button"
+				<a id="view-source" class="button" href="javascript:;"
+					style="border-bottom-right-radius: 0; border-top-right-radius: 0; margin-right: 0">View source
+				</a><a class="button"
 					href="http://jsfiddle.net/gh/get/jquery/<?php echo JQUERY_VERSION; ?>/highcharts/highcharts/tree/master/samples/<?php echo $path ?>/"
+					style="border-bottom-left-radius: 0; border-top-left-radius: 0; margin-left: 0; border-left: 1px solid gray"
 					target="_blank">jsFiddle</a>
 
-				<a id="view-source" class="button" href="javascript:;">View source</a>
 				
 				<input id="record" type="checkbox" />
 				<label for="record" title="Record calls to Pointer mouse events that can be added to test.js for automatic testing of tooltip and other mouse operations">Record mouse</label>
@@ -467,6 +469,14 @@ function getResources() {
 			<?php echo $html ?>
 			</div>
 			<hr/>
+			<?php if (is_file("$fullpath/test-notes.html")) { ?>
+			<section class="test-notes">
+				<header>Test notes</header>
+				<div class="test-notes-content">
+					<?php include("$fullpath/test-notes.html"); ?>
+				</div>
+			</section>
+			<?php } ?>
 			<ul>
 				<li>Mobile testing: <a href="http://<?php echo $_SERVER['SERVER_NAME'] ?>/draft">http://<?php echo $_SERVER['SERVER_NAME'] ?>/draft</a></li>
 			</ul>

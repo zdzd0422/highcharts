@@ -356,6 +356,9 @@ Chart.prototype = {
 			chart.drawChartBox();
 		}
 
+		// Fire an event before redrawing series, used by the boost module to
+		// clear previous series renderings.
+		fireEvent(chart, 'predraw');
 
 		// redraw affected series
 		each(series, function (serie) {
@@ -375,8 +378,9 @@ Chart.prototype = {
 		// redraw if canvas
 		renderer.draw();
 
-		// fire the event
+		// Fire the events
 		fireEvent(chart, 'redraw');
+		fireEvent(chart, 'render');
 
 		if (isHiddenChart) {
 			chart.cloneRenderTo(true);
@@ -613,10 +617,14 @@ Chart.prototype = {
 			chart.containerHeight = getStyle(renderTo, 'height');
 		}
 		
-		chart.chartWidth = Math.max(0, widthOption || chart.containerWidth || 600); // #1393, 1460
-		chart.chartHeight = Math.max(0, pick(heightOption,
-			// the offsetHeight of an empty container is 0 in standard browsers, but 19 in IE7:
-			chart.containerHeight > 19 ? chart.containerHeight : 400));
+		chart.chartWidth = Math.max( // #1393
+			0,
+			widthOption || chart.containerWidth || 600 // #1460
+		);
+		chart.chartHeight = Math.max(
+			0,
+			heightOption || chart.containerHeight || 400
+		);
 	},
 
 	/**
@@ -1558,9 +1566,6 @@ Chart.prototype = {
 
 		chart.render();
 
-		// add canvas
-		chart.renderer.draw();
-		
 		// Fire the load event if there are no external images
 		if (!chart.renderer.imgCount && chart.onload) {
 			chart.onload();
@@ -1584,6 +1589,8 @@ Chart.prototype = {
 		}, this);
 
 		fireEvent(this, 'load');
+		fireEvent(this, 'render');
+		
 
 		// Set up auto resize, check for not destroyed (#6068)
 		if (defined(this.index) && this.options.chart.reflow !== false) {
