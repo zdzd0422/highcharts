@@ -306,10 +306,10 @@ Highcharts.extend(Data.prototype, {
 				if (columns.length < column + 1) {
 					columns.push([]);
 				}
-
+				
 				if (!noAdd) {
 					columns[column].push(token);					
-				}				
+				}			
 
 				token = '';
 				++column;
@@ -351,7 +351,20 @@ Highcharts.extend(Data.prototype, {
 				}
 			}		
 
-			push();		
+			push();
+
+			if (column < columns.length) {
+				// There might be an issue.
+				// This set is either 
+				console.log('warning, there are missing columns in the set');
+
+				// Fill in
+				if (!noAdd) {
+					for (var z = column; z < columns.length; z++) {
+						columns[z].push(0);
+					}					
+				}
+			}
     	}
 
     	//Attempt to guess the delimiter
