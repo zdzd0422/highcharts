@@ -12,7 +12,8 @@ $(function () {
         data: {
             csv: document.getElementById('csv').innerHTML,
             decimalPoint: null,
-            itemDelimiter: null
+            itemDelimiter: null,
+            dateFormat: false
         },
 
         plotOptions: {

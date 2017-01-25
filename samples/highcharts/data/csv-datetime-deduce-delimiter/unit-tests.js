@@ -16,13 +16,13 @@ QUnit.test('Deduce CSV format', function (assert) {
     );
 
     assert.strictEqual(
-        options.series[0].data[0][1],
+        options.series[0].data[1][1],
         6,
         'Point 2 is correct'
     );
 
     assert.strictEqual(
-        options.series[0].data[1][1],
+        options.series[0].data[2][1],
         7,
         'Point 3 is correct'
     );
