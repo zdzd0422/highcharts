@@ -298,6 +298,7 @@ Highcharts.extend(Data.prototype, {
 					token = parseFloat(token);
 					pushType('number');
 				} else if (!isNaN(Date.parse(token))) {
+					token = token.replace(/\//g, '-');
 					pushType('date');
 				} else {
 					pushType('string');
