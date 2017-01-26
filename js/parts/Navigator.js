@@ -1460,7 +1460,7 @@ wrap(Chart.prototype, 'setChartSize', function (proceed) {
 	proceed.apply(this, [].slice.call(arguments, 1));
 
 	if (navigator) {
-		legendOptions = legend.options;
+		legendOptions = legend && legend.options;
 		xAxis = navigator.xAxis;
 		yAxis = navigator.yAxis;
 		scrollbarHeight = navigator.scrollbarHeight;
@@ -1475,7 +1475,7 @@ wrap(Chart.prototype, 'setChartSize', function (proceed) {
 			navigator.left = this.plotLeft + scrollbarHeight;
 			navigator.top = navigator.navigatorOptions.top ||
 				this.chartHeight - navigator.height - scrollbarHeight - this.spacing[2] -
-					(legendOptions.verticalAlign === 'bottom' && legendOptions.enabled && !legendOptions.floating ?
+					(legendOptions && legendOptions.verticalAlign === 'bottom' && legendOptions.enabled && !legendOptions.floating ?
 						legend.legendHeight + pick(legendOptions.margin, 10) : 0);
 		}
 
