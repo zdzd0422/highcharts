@@ -1041,7 +1041,13 @@ Navigator.prototype = {
 				navigator.hasDragged = navigator.scrollbar.hasDragged;
 				navigator.render(0, 0, from, to);
 
-				if (chart.options.scrollbar.liveRedraw || e.DOMType !== 'mousemove') {
+				if (
+					chart.options.scrollbar.liveRedraw ||
+					(
+						e.DOMType !== 'mousemove' &&
+						e.DOMType !== 'touchmove'
+					)
+				) {
 					setTimeout(function () {
 						navigator.onMouseUp(e);
 					});
