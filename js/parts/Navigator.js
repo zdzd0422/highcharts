@@ -1107,7 +1107,7 @@ Navigator.prototype = {
 	 */
 	setBaseSeries: function (baseSeriesOptions) {
 		var chart = this.chart,
-			baseSeries = this.baseSeries = [];
+			baseSeries;
 
 		baseSeriesOptions = baseSeriesOptions || chart.options && chart.options.navigator.baseSeries || 0;
 
@@ -1118,6 +1118,8 @@ Navigator.prototype = {
 				s.destroy();
 			});
 		}
+
+		baseSeries = this.baseSeries = [];
 
 		// Iterate through series and add the ones that should be shown in navigator
 		each(chart.series || [], function (series, i) {
@@ -1206,10 +1208,6 @@ Navigator.prototype = {
 			each(baseSeries, function (base) {
 				if (base.xAxis) {
 					addEvent(base, 'updatedData', this.updatedDataHandler);
-					// Survive Series.update()
-					base.userOptions.events = extend(base.userOptions.event, {
-						updatedData: this.updatedDataHandler
-					});
 				}
 
 				// Handle series removal
