@@ -1214,7 +1214,7 @@ Navigator.prototype = {
 				addEvent(base, 'remove', function () {
 					if (this.navigatorSeries) {
 						erase(navigator.series, this.navigatorSeries);
-						this.navigatorSeries.remove();
+						this.navigatorSeries.remove(false);
 						delete this.navigatorSeries;
 					}
 				});		
