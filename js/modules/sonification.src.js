@@ -21,7 +21,7 @@ H.audio = new (H.win.AudioContext || H.win.webkitAudioContext)();
 H.Series.prototype.sonify = function (options, callback) {
 	var gainNode = H.audio.createGain(),
 		panNode = H.audio.createStereoPanner(), // Note: Panning might not be accessible to mono users
-		oscillator = H.audio.createOscillator(), // Initial oscillator. Updated or replaced depending on smooth setting
+		oscillator = H.audio.createOscillator(),
 		series = this,
 		numPoints = series.points.length,
 		valueToFreq = function (val) {
@@ -31,13 +31,14 @@ H.Series.prototype.sonify = function (options, callback) {
 			return options.minFrequency + (val - valMin) * freqStep;
 		},
 		timePerPoint = Math.min(options.maxDuration / numPoints, options.maxPointDuration),
-		maxPointsNum = options.maxDuration / options.maxPointDuration,
+		maxPointsNum = options.maxDuration / options.minPointDuration,
 		pointSkip = 1;
 
 	// Skip over points if we have too many
 	// We might want to use data grouping here
 	if (timePerPoint < options.minPointDuration) {
-		pointSkip = numPoints / maxPointsNum;
+		pointSkip = Math.ceil(numPoints / maxPointsNum);
+		timePerPoint = options.minPointDuration;
 	}
 
 	// Init audio nodes
@@ -49,20 +50,22 @@ H.Series.prototype.sonify = function (options, callback) {
 	gainNode.connect(panNode);
 	panNode.connect(H.audio.destination);
 
-	if (options.smooth) {
-		oscillator.start(H.audio.currentTime);
-		for (var i = 0, point; i < numPoints; i += pointSkip) {
-			point = this.points[i];
-			oscillator.frequency.linearRampToValueAtTime(
+	// Play
+	oscillator.start(H.audio.currentTime);
+	for (var i = 0, point; i < numPoints; i += pointSkip) {
+		point = this.points[i];
+		if (point) {
+			oscillator.frequency[
+				options.smooth ?
+				'linearRampToValueAtTime' : 'setValueAtTime'
+			](
 				valueToFreq(point.y),
 				H.audio.currentTime + i * timePerPoint / 1000
 			);
 		}
-		gainNode.gain.setTargetAtTime(0, H.audio.currentTime + i * timePerPoint / 1000, 0.1); // Fade
-		oscillator.stop(H.audio.currentTime + i * timePerPoint / 1000 + 1); // Stop eventually
-	} else {
-		// TODO
 	}
+	gainNode.gain.setTargetAtTime(0, H.audio.currentTime + i * timePerPoint / 1000, 0.1); // Fade
+	oscillator.stop(H.audio.currentTime + i * timePerPoint / 1000 + 1); // Stop eventually
 
 	oscillator.onended = function () {
 		callback.call(series);
@@ -90,12 +93,12 @@ H.setOptions({
 	sonification: {
 		seriesDelay: 1000, // Delay between series in ms
 		maxDuration: 7000, // In ms
-		minPointDuration: 10, // In ms
+		minPointDuration: 30, // In ms
 		maxPointDuration: 300, // In ms
 		minFrequency: 100,
 		maxFrequency: 2400,
 		waveType: 'sine',
-		smooth: true,
+		smooth: false,
 		stereo: true,
 		volume: 0.9
 	}
