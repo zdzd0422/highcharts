@@ -18,6 +18,29 @@ var merge = H.merge;
 
 H.audio = new (H.win.AudioContext || H.win.webkitAudioContext)();
 
+// Highlight a point (show tooltip and display hover state). Returns the highlighted point.
+// Stolen from Accessibility module
+H.Point.prototype.highlight = function () {
+	var chart = this.series.chart;
+	if (this.graphic && this.graphic.element.focus) {
+		this.graphic.element.focus();
+	}
+	if (!this.isNull) {
+		this.onMouseOver(); // Show the hover marker
+		// Show the tooltip
+		if (chart.tooltip) {
+			chart.tooltip.refresh(chart.tooltip.shared ? [this] : this);
+		}
+	} else {
+		if (chart.tooltip) {
+			chart.tooltip.hide(0);
+		}
+		// Don't call blur on the element, as it messes up the chart div's focus
+	}
+	chart.highlightedPoint = this;
+	return this;
+};
+
 H.Series.prototype.sonify = function (options, callback) {
 	var gainNode = H.audio.createGain(),
 		panNode = H.audio.createStereoPanner(), // Note: Panning might not be accessible to mono users
@@ -53,24 +76,30 @@ H.Series.prototype.sonify = function (options, callback) {
 
 	// Play
 	oscillator.start(H.audio.currentTime);
-	for (var i = 0, point, targetTime; i < numPoints; i += pointSkip) {
+	for (var i = 0, point, timeOffset; i < numPoints; i += pointSkip) {
 		point = this.points[i];
 		if (point) {
-			targetTime = H.audio.currentTime + i * timePerPoint / 1000;
+			timeOffset = i * timePerPoint / 1000;
 			oscillator.frequency[
 				options.smooth ?
 				'linearRampToValueAtTime' : 'setValueAtTime'
 			](
 				valueToFreq(point.y),
-				targetTime
+				H.audio.currentTime + timeOffset
 			);
 
 			if (options.stereo) {
 				panNode.pan.setValueAtTime(
 					-1 * options.stereoRange + panStep * i,
-					targetTime
+					H.audio.currentTime + timeOffset
 				);
 			}
+
+			setTimeout((function (point) {
+				return function () {
+					point.highlight();
+				};
+			}(point)), timeOffset * 1000);
 		}
 	}
 	gainNode.gain.setTargetAtTime(0, H.audio.currentTime + i * timePerPoint / 1000, 0.1); // Fade
