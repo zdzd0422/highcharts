@@ -32,7 +32,8 @@ H.Series.prototype.sonify = function (options, callback) {
 		},
 		timePerPoint = Math.min(options.maxDuration / numPoints, options.maxPointDuration),
 		maxPointsNum = options.maxDuration / options.minPointDuration,
-		pointSkip = 1;
+		pointSkip = 1,
+		panStep = 2 * options.stereoRange / numPoints;
 
 	// Skip over points if we have too many
 	// We might want to use data grouping here
@@ -52,16 +53,24 @@ H.Series.prototype.sonify = function (options, callback) {
 
 	// Play
 	oscillator.start(H.audio.currentTime);
-	for (var i = 0, point; i < numPoints; i += pointSkip) {
+	for (var i = 0, point, targetTime; i < numPoints; i += pointSkip) {
 		point = this.points[i];
 		if (point) {
+			targetTime = H.audio.currentTime + i * timePerPoint / 1000;
 			oscillator.frequency[
 				options.smooth ?
 				'linearRampToValueAtTime' : 'setValueAtTime'
 			](
 				valueToFreq(point.y),
-				H.audio.currentTime + i * timePerPoint / 1000
+				targetTime
 			);
+
+			if (options.stereo) {
+				panNode.pan.setValueAtTime(
+					-1 * options.stereoRange + panStep * i,
+					targetTime
+				);
+			}
 		}
 	}
 	gainNode.gain.setTargetAtTime(0, H.audio.currentTime + i * timePerPoint / 1000, 0.1); // Fade
@@ -92,7 +101,7 @@ H.Chart.prototype.sonify = function () {
 H.setOptions({
 	sonification: {
 		seriesDelay: 1000, // Delay between series in ms
-		maxDuration: 7000, // In ms
+		maxDuration: 5000, // In ms
 		minPointDuration: 30, // In ms
 		maxPointDuration: 300, // In ms
 		minFrequency: 100,
@@ -100,6 +109,7 @@ H.setOptions({
 		waveType: 'sine',
 		smooth: false,
 		stereo: true,
+		stereoRange: 0.8, // Factor to apply to stereo range
 		volume: 0.9
 	}
 });
