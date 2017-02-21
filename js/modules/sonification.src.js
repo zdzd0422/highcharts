@@ -18,7 +18,8 @@ var merge = H.merge;
 
 H.audio = new (H.win.AudioContext || H.win.webkitAudioContext)();
 
-// Highlight a point (show tooltip and display hover state). Returns the highlighted point.
+// Highlight a point (show tooltip and display hover state). Returns the 
+// highlighted point.
 // Stolen from Accessibility module
 H.Point.prototype.highlight = function () {
 	var chart = this.series.chart;
@@ -43,17 +44,21 @@ H.Point.prototype.highlight = function () {
 
 H.Series.prototype.sonify = function (options, callback) {
 	var gainNode = H.audio.createGain(),
-		panNode = H.audio.createStereoPanner(), // Note: Panning might not be accessible to mono users
+		panNode = H.audio.createStereoPanner(),
 		oscillator = H.audio.createOscillator(),
 		series = this,
 		numPoints = series.points.length,
 		valueToFreq = function (val) {
 			var valMin = series.yAxis && series.yAxis.dataMin || series.dataMin,
 				valMax = series.yAxis && series.yAxis.dataMax || series.dataMax,
-				freqStep = (options.maxFrequency - options.minFrequency) / (valMax - valMin);
+				freqStep = (options.maxFrequency - options.minFrequency) /
+					(valMax - valMin);
 			return options.minFrequency + (val - valMin) * freqStep;
 		},
-		timePerPoint = Math.min(options.maxDuration / numPoints, options.maxPointDuration),
+		timePerPoint = Math.min(
+			options.maxDuration / numPoints, 
+			options.maxPointDuration
+		),
 		maxPointsNum = options.maxDuration / options.minPointDuration,
 		pointSkip = 1,
 		panStep = 2 * options.stereoRange / numPoints;
@@ -66,7 +71,7 @@ H.Series.prototype.sonify = function (options, callback) {
 	}
 
 	// Init audio nodes
-	panNode.pan.value = 0; // TODO
+	panNode.pan.value = -1;
 	gainNode.gain.value = options.volume;
 	oscillator.type = options.waveType;
 	oscillator.frequency.value = 0;
@@ -102,8 +107,14 @@ H.Series.prototype.sonify = function (options, callback) {
 			}(point)), timeOffset * 1000);
 		}
 	}
-	gainNode.gain.setTargetAtTime(0, H.audio.currentTime + i * timePerPoint / 1000, 0.1); // Fade
-	oscillator.stop(H.audio.currentTime + i * timePerPoint / 1000 + 1); // Stop eventually
+
+	// Fade and stop oscillator
+	gainNode.gain.setTargetAtTime(
+		0,
+		H.audio.currentTime + i * timePerPoint / 1000, 
+		0.1
+	);
+	oscillator.stop(H.audio.currentTime + i * timePerPoint / 1000 + 1);
 
 	oscillator.onended = function () {
 		callback.call(series);
@@ -138,7 +149,7 @@ H.setOptions({
 		maxFrequency: 2400,
 		waveType: 'sine',
 		smooth: false,
-		stereo: true,
+		stereo: true, // Note: Panning might not be accessible to mono users
 		stereoRange: 0.8, // Factor to apply to stereo range
 		volume: 0.9
 	}
