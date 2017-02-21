@@ -48,8 +48,8 @@ H.Series.prototype.sonify = function (options, callback) {
 		series = this,
 		numPoints = series.points.length,
 		valueToFreq = function (val) {
-			var valMin = options.rangeMin || series.dataMin,
-				valMax = options.rangeMax || series.dataMax,
+			var valMin = series.yAxis && series.yAxis.dataMin || series.dataMin,
+				valMax = series.yAxis && series.yAxis.dataMax || series.dataMax,
 				freqStep = (options.maxFrequency - options.minFrequency) / (valMax - valMin);
 			return options.minFrequency + (val - valMin) * freqStep;
 		},
@@ -112,6 +112,7 @@ H.Series.prototype.sonify = function (options, callback) {
 
 H.Chart.prototype.sonify = function () {
 	var options = this.options.sonification;
+
 	if (this.series[0]) {
 		this.series[0].sonify(options, function sonifyNext() {
 			var newSeries = this.chart.series[this.index + 1],
@@ -129,7 +130,7 @@ H.Chart.prototype.sonify = function () {
 // Default sonification options
 H.setOptions({
 	sonification: {
-		seriesDelay: 1000, // Delay between series in ms
+		seriesDelay: 800, // Delay between series in ms
 		maxDuration: 5000, // In ms
 		minPointDuration: 30, // In ms
 		maxPointDuration: 300, // In ms
