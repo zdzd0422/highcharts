@@ -624,7 +624,7 @@ Scrollbar.prototype = {
 			}
 		}, this);
 
-		if (scroller && this == scroller) { // #6421, chart may have more scrollbars
+		if (scroller) {
 			scroller.scrollbar = null;
 
 			// Destroy elements in collection
