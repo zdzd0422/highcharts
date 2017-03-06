@@ -322,11 +322,11 @@ Axis.prototype.swapZ = function (p, insidePlotArea) {
 };
 
 ZAxis = H.ZAxis = function () {
-	this.isZAxis = true;
 	this.init.apply(this, arguments);
 };
 extend(ZAxis.prototype, Axis.prototype);
 extend(ZAxis.prototype, {
+	isZAxis: true,
 	setOptions: function (userOptions) {
 		userOptions = merge({
 			offset: 0,
@@ -365,7 +365,7 @@ extend(ZAxis.prototype, {
 				axis.hasVisibleSeries = true;
 
 				// Validate threshold in logarithmic axes
-				if (axis.isLog && threshold <= 0) {
+				if (axis.positiveValuesOnly && threshold <= 0) {
 					threshold = null;
 				}
 

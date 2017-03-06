@@ -77,8 +77,8 @@ SVGElement.prototype = {
 	 * @type {Array.<string>}
 	 */
 	textProps: ['direction', 'fontSize', 'fontWeight', 'fontFamily',
-		'fontStyle', 'color', 'lineHeight', 'width', 'textDecoration',
-		'textOverflow', 'textOutline'],
+		'fontStyle', 'color', 'lineHeight', 'width', 'textAlign',
+		'textDecoration', 'textOverflow', 'textOutline'],
 
 	/**
 	 * Initialize the SVG renderer. This function only exists to make the
@@ -125,6 +125,9 @@ SVGElement.prototype = {
 			animate(this, params, animOptions);
 		} else {
 			this.attr(params, null, complete);
+			if (animOptions.step) {
+				animOptions.step.call(this);
+			}
 		}
 		return this;
 	},
@@ -685,10 +688,9 @@ SVGElement.prototype = {
 	 * @returns {SVGElement} Return the SVG element for chaining.
 	 */
 	css: function (styles) {
-		var elemWrapper = this,
-			oldStyles = elemWrapper.styles,
+		var oldStyles = this.styles,
 			newStyles = {},
-			elem = elemWrapper.element,
+			elem = this.element,
 			textWidth,
 			n,
 			serializedCss = '',
@@ -715,9 +717,6 @@ SVGElement.prototype = {
 			}
 		}
 		if (hasNew) {
-			textWidth = elemWrapper.textWidth =
-				(styles && styles.width && elem.nodeName.toLowerCase() === 'text' && pInt(styles.width)) ||
-				elemWrapper.textWidth; // #3501
 
 			// Merge the new styles with the old ones
 			if (oldStyles) {
@@ -727,16 +726,25 @@ SVGElement.prototype = {
 				);
 			}
 
-			// store object
-			elemWrapper.styles = styles;
+			// Get the text width from style
+			textWidth = this.textWidth = (
+				styles &&
+				styles.width &&
+				styles.width !== 'auto' &&
+				elem.nodeName.toLowerCase() === 'text' &&
+				pInt(styles.width)
+			);
 
-			if (textWidth && (!svg && elemWrapper.renderer.forExport)) {
+			// store object
+			this.styles = styles;
+
+			if (textWidth && (!svg && this.renderer.forExport)) {
 				delete styles.width;
 			}
 
 			// serialize and set style attribute
 			if (isMS && !svg) {
-				css(elemWrapper.element, styles);
+				css(this.element, styles);
 			} else {
 				hyphenate = function (a, b) {
 					return '-' + b.toLowerCase();
@@ -754,20 +762,22 @@ SVGElement.prototype = {
 			}
 
 
-			if (elemWrapper.added) {
-				// Rebuild text after added
-				if (textWidth) {
-					elemWrapper.renderer.buildText(elemWrapper);
+			if (this.added) {
+
+				// Rebuild text after added. Cache mechanisms in the buildText
+				// will prevent building if there are no significant changes.
+				if (this.element.nodeName === 'text') {
+					this.renderer.buildText(this);
 				}
 
 				// Apply text outline after added
 				if (styles && styles.textOutline) {
-					elemWrapper.applyTextOutline(styles.textOutline);
+					this.applyTextOutline(styles.textOutline);
 				}
 			}
 		}
 
-		return elemWrapper;
+		return this;
 	},
 
 	/*= if (build.classic) { =*/
@@ -2102,8 +2112,13 @@ SVGRenderer.prototype = {
 
 			if (hasMarkup) {
 				lines = textStr
+					/*= if (build.classic) { =*/
 					.replace(/<(b|strong)>/g, '<span style="font-weight:bold">')
 					.replace(/<(i|em)>/g, '<span style="font-style:italic">')
+					/*= } else { =*/
+					.replace(/<(b|strong)>/g, '<span class="highcharts-strong">')
+					.replace(/<(i|em)>/g, '<span class="highcharts-emphasized">')
+					/*= } =*/
 					.replace(/<a/g, '<span')
 					.replace(/<\/(b|strong|i|em|a)>/g, '</span>')
 					.split(/<br.*?>/g);
@@ -3437,7 +3452,7 @@ SVGRenderer.prototype = {
 
 		// only change local variables
 		wrapper.widthSetter = function (value) {
-			width = value;
+			width = H.isNumber(value) ? value : null; // width:auto => null
 		};
 		wrapper.heightSetter = function (value) {
 			height = value;

@@ -250,6 +250,7 @@ extend(Chart.prototype, /** @lends Highcharts.Chart.prototype */ {
 		// options.title => chart.title
 		// options.tooltip => chart.tooltip
 		// options.subtitle => chart.subtitle
+		// options.mapNavigation => chart.mapNavigation
 		// options.navigator => chart.navigator
 		// options.scrollbar => chart.scrollbar
 		for (key in options) {
@@ -381,9 +382,15 @@ extend(Point.prototype, /** @lends Point.prototype */ {
 			i = point.index;
 			series.updateParallelArrays(point, i);
 			
-			// Record the options to options.data. If there is an object from before,
-			// use point options, otherwise use raw options. (#4701)
-			seriesOptions.data[i] = isObject(seriesOptions.data[i], true) ? point.options : options;
+			// Record the options to options.data. If the old or the new config
+			// is an object, use point options, otherwise use raw options
+			// (#4701, #4916).
+			seriesOptions.data[i] = (
+					isObject(seriesOptions.data[i], true) ||
+					isObject(options, true)
+				) ?
+				point.options :
+				options;
 
 			// redraw
 			series.isDirty = series.isDirtyData = true;
@@ -584,7 +591,7 @@ extend(Series.prototype, /** @lends Series.prototype */ {
 			// must use user options when changing type because this.options is merged
 			// in with type specific plotOptions
 			oldOptions = this.userOptions,
-			oldType = this.type,
+			oldType = this.oldType || this.type,
 			newType = newOptions.type || oldOptions.type || chart.options.chart.type,
 			proto = seriesTypes[oldType].prototype,
 			preserve = ['group', 'markerGroup', 'dataLabelsGroup'],
@@ -622,6 +629,7 @@ extend(Series.prototype, /** @lends Series.prototype */ {
 		});
 
 		this.init(chart, newOptions);
+		this.oldType = oldType;
 		chart.linkSeries(); // Links are lost in this.remove (#3028)
 		if (pick(redraw, true)) {
 			chart.redraw(false);
