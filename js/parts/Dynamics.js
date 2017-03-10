@@ -284,7 +284,7 @@ extend(Chart.prototype, /** @lends Highcharts.Chart.prototype */ {
 		// an id will update the first and the second respectively (#6019)
 		// // docs: New behaviour for unidentified items, add it to docs for 
 		// chart.update and responsive.
-		each(['xAxis', 'yAxis', 'series'], function (coll) {
+		each(['xAxis', 'yAxis', 'series', 'colorAxis'], function (coll) {
 			if (options[coll]) {
 				each(splat(options[coll]), function (newOptions, i) {
 					var item = (
