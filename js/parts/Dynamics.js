@@ -218,7 +218,9 @@ extend(Chart.prototype, /** @lends Highcharts.Chart.prototype */ {
 				this.setClassName(optionsChart.className);
 			}
 
-			if ('inverted' in optionsChart || 'polar' in optionsChart) {
+			if ('inverted' in optionsChart ||
+				'polar' in optionsChart ||
+				'alignTicks' in optionsChart) {
 				this.propFromSeries(); // Parses options.chart.inverted and options.chart.polar together with the available series
 				updateAllAxes = true;
 			}
