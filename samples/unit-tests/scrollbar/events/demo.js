@@ -46,7 +46,6 @@ QUnit.test('#6334 - double afterSetExtremes for scrollbar and navigator', functi
             'afterSetExtremes called just once'
         );
         done();
-<<<<<<< HEAD
     }, 5);
 });
 
@@ -88,7 +87,3 @@ QUnit.test('#1716 - very small range in navigator and scrollbar events', functio
         done();
     }, 5);
 });
-=======
-    }, 500);
-});
->>>>>>> master
