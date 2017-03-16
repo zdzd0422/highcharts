@@ -306,6 +306,9 @@ H.Axis.prototype = {
 		//axis.axisTitle = undefined;
 		//axis.axisLine = undefined;
 
+		// Placeholder for plotlines and plotbands groups
+		axis.plotLinesAndBandsGroups = {};
+
 		// Shorthand types
 		axis.isLog = type === 'logarithmic';
 		axis.isDatetimeAxis = isDatetimeAxis;
@@ -2504,6 +2507,7 @@ H.Axis.prototype = {
 			stacks = axis.stacks,
 			stackKey,
 			plotLinesAndBands = axis.plotLinesAndBands,
+			plotGroup,
 			i,
 			n;
 
@@ -2536,6 +2540,11 @@ H.Axis.prototype = {
 				axis[prop] = axis[prop].destroy();
 			}
 		});
+
+		// Destroy each generated group for plotlines and plotbands
+		for (plotGroup in axis.plotLinesAndBandsGroups) {
+			axis.plotLinesAndBandsGroups[plotGroup] = axis.plotLinesAndBandsGroups[plotGroup].destroy();
+		}
 
 		// Delete all properties and fall back to the prototype.
 		for (n in axis) {
