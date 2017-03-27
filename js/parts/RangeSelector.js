@@ -21,6 +21,7 @@ var addEvent = H.addEvent,
 	each = H.each,
 	extend = H.extend,
 	fireEvent = H.fireEvent,
+	getStyle = H.getStyle,
 	HCDate = H.Date,
 	isNumber = H.isNumber,
 	merge = H.merge,
@@ -583,8 +584,11 @@ RangeSelector.prototype = {
 		};
 		// Hide away the input box
 		input.onblur = function () {
-			updateExtremes(); // #4710 - call setExtremes when click on the chart after input edit
-			rangeSelector.hideInput(name);
+			// only for visible input (#4710)
+			if (getStyle(this, 'width') > 1) {
+				updateExtremes(); // call setExtremes when click on the chart after input edit (#4710)
+				rangeSelector.hideInput(name);
+			}
 		};
 
 		// handle changes in the input boxes
