@@ -555,7 +555,8 @@ Chart.prototype = {
 	},
 
 	/**
-	 * Lay out the chart titles and cache the full offset height for use in getMargins
+	 * Lay out the chart titles and cache the full offset height for use
+	 * in getMargins
 	 */
 	layOutTitles: function (redraw) {
 		var titleOffset = 0,
@@ -585,8 +586,8 @@ Chart.prototype = {
 					}, titleOptions), false, 'spacingBox');
 
 				if (!titleOptions.floating && !titleOptions.verticalAlign) {
-					titleOffset = Math.ceil(titleOffset
-						+ title.getBBox(titleOptions.useHTML).height);
+					titleOffset = Math.ceil(titleOffset +
+						title.getBBox(titleOptions.useHTML).height);
 						// Skip the cache for HTML (#3481)
 				}
 			}
