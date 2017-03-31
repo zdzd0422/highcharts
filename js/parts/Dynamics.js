@@ -1,5 +1,5 @@
 /**
- * (c) 2010-2016 Torstein Honsi
+ * (c) 2010-2017 Torstein Honsi
  *
  * License: www.highcharts.com/license
  */
@@ -218,10 +218,14 @@ extend(Chart.prototype, /** @lends Highcharts.Chart.prototype */ {
 				this.setClassName(optionsChart.className);
 			}
 
-			if ('inverted' in optionsChart ||
-				'polar' in optionsChart ||
-				'alignTicks' in optionsChart) {
-				this.propFromSeries(); // Parses options.chart.inverted and options.chart.polar together with the available series
+			if ('inverted' in optionsChart || 'polar' in optionsChart) {
+				// Parse options.chart.inverted and options.chart.polar together
+				// with the available series.
+				this.propFromSeries();
+				updateAllAxes = true;
+			}
+
+			if ('alignTicks' in optionsChart) { // #6452
 				updateAllAxes = true;
 			}
 
@@ -285,7 +289,7 @@ extend(Chart.prototype, /** @lends Highcharts.Chart.prototype */ {
 		// update the first series in the chart. Setting two series without
 		// an id will update the first and the second respectively (#6019)
 		// chart.update and responsive.
-		each(['xAxis', 'yAxis', 'series', 'colorAxis'], function (coll) {
+		each(['xAxis', 'yAxis', 'series', 'colorAxis', 'pane'], function (coll) {
 			if (options[coll]) {
 				each(splat(options[coll]), function (newOptions, i) {
 					var item = (

@@ -1,5 +1,5 @@
 /**
- * (c) 2010-2016 Torstein Honsi
+ * (c) 2010-2017 Torstein Honsi
  *
  * License: www.highcharts.com/license
  */
@@ -198,10 +198,10 @@ SVGElement.prototype = {
 			value;
 
 		// Apply linear or radial gradients
-		if (color.linearGradient) {
-			gradName = 'linearGradient';
-		} else if (color.radialGradient) {
+		if (color.radialGradient) {
 			gradName = 'radialGradient';
+		} else if (color.linearGradient) {
+			gradName = 'linearGradient';
 		}
 
 		if (gradName) {
@@ -222,12 +222,17 @@ SVGElement.prototype = {
 			}
 
 			// Correct the radial gradient for the radial reference system
-			if (gradName === 'radialGradient' && radialReference && !defined(gradAttr.gradientUnits)) {
+			if (
+				gradName === 'radialGradient' &&
+				radialReference &&
+				!defined(gradAttr.gradientUnits)
+			) {
 				radAttr = gradAttr; // Save the radial attributes for updating
-				gradAttr = merge(gradAttr,
+				gradAttr = merge(
+					gradAttr,
 					renderer.getRadialAttr(radialReference, radAttr),
 					{ gradientUnits: 'userSpaceOnUse' }
-					);
+				);
 			}
 
 			// Build the unique key to detect whether we need to create a new element (#1282)
@@ -312,11 +317,13 @@ SVGElement.prototype = {
 	applyTextOutline: function (textOutline) {
 		var elem = this.element,
 			tspans,
+			tspan,
 			hasContrast = textOutline.indexOf('contrast') !== -1,
 			styles = {},
 			color,
 			strokeWidth,
-			firstRealChild;
+			firstRealChild,
+			i;
 
 		// When the text shadow is set to contrast, use dark stroke for light
 		// text and vice versa.
@@ -327,20 +334,20 @@ SVGElement.prototype = {
 			);
 		}
 
-		this.fakeTS = true; // Fake text shadow
-
-		// In order to get the right y position of the clone,
-		// copy over the y setter
-		this.ySetter = this.xSetter;
-
-		tspans = [].slice.call(elem.getElementsByTagName('tspan'));
-		
 		// Extract the stroke width and color
 		textOutline = textOutline.split(' ');
 		color = textOutline[textOutline.length - 1];
 		strokeWidth = textOutline[0];
 
-		if (strokeWidth && strokeWidth !== 'none') {
+		if (strokeWidth && strokeWidth !== 'none' && H.svg) {
+
+			this.fakeTS = true; // Fake text shadow
+
+			tspans = [].slice.call(elem.getElementsByTagName('tspan'));
+
+			// In order to get the right y position of the clone,
+			// copy over the y setter
+			this.ySetter = this.xSetter;
 
 			// Since the stroke is applied on center of the actual outline, we
 			// need to double it to get the correct stroke-width outside the 
@@ -352,14 +359,17 @@ SVGElement.prototype = {
 				}
 			);
 			
-			// Remove shadows from previous runs
-			each(tspans, function (tspan) {
+			// Remove shadows from previous runs. Iterate from the end to
+			// support removing items inside the cycle (#6472).
+			i = tspans.length;
+			while (i--) {
+				tspan = tspans[i];
 				if (tspan.getAttribute('class') === 'highcharts-text-outline') {
 					// Remove then erase
 					erase(tspans, elem.removeChild(tspan));
 				}
-			});
-			
+			}
+
 			// For each of the tspans, create a stroked copy behind it.
 			firstRealChild = elem.firstChild;
 			each(tspans, function (tspan, y) {
@@ -482,7 +492,12 @@ SVGElement.prototype = {
 					stop(this, key);
 				}
 
-				if (this.symbolName && /^(x|y|width|height|r|start|end|innerR|anchorX|anchorY)/.test(key)) {
+				// Special handling of symbol attributes
+				if (
+					this.symbolName &&
+					/^(x|y|width|height|r|start|end|innerR|anchorX|anchorY)$/
+						.test(key)
+				) {
 					if (!hasSetSymbolSize) {
 						this.symbolAttr(hash);
 						hasSetSymbolSize = true;
@@ -699,8 +714,8 @@ SVGElement.prototype = {
 			// These CSS properties are interpreted internally by the SVG
 			// renderer, but are not supported by SVG and should not be added to
 			// the DOM. In styled mode, no CSS should find its way to the DOM
-			// whatsoever (#6173).
-			svgPseudoProps = ['textOverflow', 'width'];
+			// whatsoever (#6173, #6474).
+			svgPseudoProps = ['textOutline', 'textOverflow', 'width'];
 
 		// convert legacy
 		if (styles && styles.color) {
@@ -1370,8 +1385,7 @@ SVGElement.prototype = {
 			parentToClean = wrapper.renderer.isSVG && element.nodeName === 'SPAN' && wrapper.parentGroup,
 			grandParent,
 			key,
-			i,
-			elementsWithClipPaths;
+			i;
 
 		// remove events
 		element.onclick = element.onmouseout = element.onmouseover = element.onmousemove = element.point = null;
@@ -1379,16 +1393,16 @@ SVGElement.prototype = {
 
 		if (wrapper.clipPath) {
 			// Look for existing references to this clipPath and remove them
-			// before destroying the element
-			elementsWithClipPaths = wrapper.element.ownerSVGElement
-										.querySelectorAll('[clip-path]');
-			each(elementsWithClipPaths, function (el) {
-				if (el.getAttribute('clip-path').indexOf(
-						wrapper.clipPath.element.id) > -1) {
-					el.removeAttribute('clip-path');
+			// before destroying the element (#6196).
+			each(
+				wrapper.element.ownerSVGElement.querySelectorAll('[clip-path]'),
+				function (el) {
+					if (el.getAttribute('clip-path')
+							.indexOf(wrapper.clipPath.element.id) > -1) {
+						el.removeAttribute('clip-path');
+					}
 				}
-			});
-
+			);
 			wrapper.clipPath = wrapper.clipPath.destroy();
 		}
 

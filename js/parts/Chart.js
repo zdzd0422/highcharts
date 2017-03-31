@@ -1,5 +1,5 @@
 /**
- * (c) 2010-2016 Torstein Honsi
+ * (c) 2010-2017 Torstein Honsi
  *
  * License: www.highcharts.com/license
  */
@@ -586,9 +586,11 @@ Chart.prototype = {
 					}, titleOptions), false, 'spacingBox');
 
 				if (!titleOptions.floating && !titleOptions.verticalAlign) {
-					titleOffset = Math.ceil(titleOffset +
-						title.getBBox(titleOptions.useHTML).height);
+					titleOffset = Math.ceil(
+						titleOffset +
 						// Skip the cache for HTML (#3481)
+						title.getBBox(titleOptions.useHTML).height
+					);
 				}
 			}
 		}, this);

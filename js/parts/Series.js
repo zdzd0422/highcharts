@@ -1,5 +1,5 @@
 /**
- * (c) 2010-2016 Torstein Honsi
+ * (c) 2010-2017 Torstein Honsi
  *
  * License: www.highcharts.com/license
  */
@@ -171,7 +171,7 @@ H.Series = H.seriesType('line', null, { // base series options
 	//}
 	turboThreshold: 1000,
 	// zIndex: null
-	findNearestPointBy: 'x'
+	findNearestPointBy: 'x' // docs
 
 }, /** @lends Series.prototype */ {
 	isCartesian: true,
@@ -816,8 +816,10 @@ H.Series = H.seriesType('line', null, { // base series options
 				point = (new PointClass()).init(series, [processedXData[i]].concat(splat(processedYData[i])));
 				point.dataGroup = series.groupMap[i];
 			}
-			point.index = cursor; // For faster access in Point.update
-			points[i] = point;
+			if (point) { // #6279
+				point.index = cursor; // For faster access in Point.update
+				points[i] = point;
+			}
 		}
 
 		// Hide cropped-away points - this only runs when the number of points is above cropThreshold, or when
@@ -1098,7 +1100,6 @@ H.Series = H.seriesType('line', null, { // base series options
 					chart[sharedClipKey] = chart[sharedClipKey].destroy();
 				}
 				if (chart[sharedClipKey + 'm']) {
-					this.markerGroup.clip();
 					chart[sharedClipKey + 'm'] = chart[sharedClipKey + 'm'].destroy();
 				}
 			}

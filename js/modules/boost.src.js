@@ -1963,9 +1963,7 @@ function createAndAttachRenderer(chart, series) {
 		if (target instanceof H.Chart) {
 			target.markerGroup = target.renderer.g().add(targetGroup);
 
-			target.markerGroup.translateX = series.xAxis.pos;
-			target.markerGroup.translateY = series.yAxis.pos;
-			target.markerGroup.updateTransform();
+			target.markerGroup.translate(series.xAxis.pos, series.yAxis.pos);
 		}
 	}
 	
@@ -2655,9 +2653,10 @@ H.Chart.prototype.callbacks.push(function (chart) {
 
 		//see #6518
 		if (chart.markerGroup) {
-			chart.markerGroup.translateX = chart.xAxis[0].pos;
-			chart.markerGroup.translateY = chart.yAxis[0].pos;	
-			chart.markerGroup.updateTransform();		
+			chart.markerGroup.translate(
+				chart.xAxis[0].pos,
+				chart.yAxis[0].pos
+			);
 		}
 	}
 

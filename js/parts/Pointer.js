@@ -1,5 +1,5 @@
 /**
- * (c) 2010-2016 Torstein Honsi
+ * (c) 2010-2017 Torstein Honsi
  *
  * License: www.highcharts.com/license
  */
@@ -848,8 +848,16 @@ H.Pointer.prototype = {
 	 */
 	destroy: function () {
 		var prop;
+		
+		if (this.unDocMouseMove) {
+			this.unDocMouseMove();
+		}
 
-		removeEvent(this.chart.container, 'mouseleave', this.onContainerMouseLeave);
+		removeEvent(
+			this.chart.container,
+			'mouseleave',
+			this.onContainerMouseLeave
+		);
 		if (!H.chartCount) {
 			removeEvent(doc, 'mouseup', this.onDocumentMouseUp);
 			removeEvent(doc, 'touchend', this.onDocumentTouchEnd);
