@@ -3557,11 +3557,11 @@ SVGRenderer.prototype = {
 		};
 		/*= } =*/
 		wrapper.anchorXSetter = function (value, key) {
-			anchorX = value;
+			anchorX = wrapper.anchorX = value;
 			boxAttr(key, Math.round(value) - getCrispAdjust() - wrapperX);
 		};
 		wrapper.anchorYSetter = function (value, key) {
-			anchorY = value;
+			anchorY = wrapper.anchorY = value;
 			boxAttr(key, value - wrapperY);
 		};
 
