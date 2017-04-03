@@ -1,5 +1,5 @@
 /**
- * (c) 2010-2016 Torstein Honsi
+ * (c) 2010-2017 Torstein Honsi
  *
  * License: www.highcharts.com/license
  */
@@ -342,8 +342,7 @@ Scrollbar.prototype = {
 		}
 
 		from = Math.max(from, 0);
-
-		fromPX = fullWidth * from;
+		fromPX = Math.ceil(fullWidth * from);
 		toPX = fullWidth * Math.min(to, 1);
 		scroller.calculatedWidth = newSize = correctFloat(toPX - fromPX);
 
