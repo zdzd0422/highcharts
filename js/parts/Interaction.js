@@ -30,7 +30,8 @@ var addEvent = H.addEvent,
 	Series = H.Series,
 	seriesTypes = H.seriesTypes,
 	svg = H.svg,
-	TrackerMixin;
+	TrackerMixin,
+	wrap = H.wrap;
 
 /**
  * TrackerMixin for points and graphs.
@@ -220,10 +221,25 @@ extend(Legend.prototype, {
 	setItemEvents: function (item, legendItem, useHTML) {
 		var legend = this,
 			boxWrapper = legend.chart.renderer.boxWrapper,
-			activeClass = 'highcharts-legend-' + (item.series ? 'point' : 'series') + '-active';
+			activeClass = 'highcharts-legend-' +
+				(item.series ? 'point' : 'series') + '-active',
+			// Set the events on the item group ...
+			eventItem = item.legendGroup;
 
-		// Set the events on the item group, or in case of useHTML, the item itself (#1249)
-		(useHTML ? legendItem : item.legendGroup).on('mouseover', function () {
+		if (useHTML) {
+			// ... or in case of useHTML, the item itself (#1249)
+			eventItem = legendItem;
+
+			// useHTML = SVG(symbol) + HTML(text). Need events for both (#6553)
+			wrap(legendItem, 'on', function (proceed) {
+				// for SVG
+				proceed.apply(this.parentGroup, [].slice.call(arguments, 1));
+				// and for HTML
+				return proceed.apply(this, [].slice.call(arguments, 1));
+			});
+		}
+
+		eventItem.on('mouseover', function () {
 			item.setState('hover');
 			
 			// A CSS class to dim or hide other than the hovered series
@@ -235,7 +251,10 @@ extend(Legend.prototype, {
 		})
 		.on('mouseout', function () {
 			/*= if (build.classic) { =*/
-			legendItem.css(item.visible ? legend.itemStyle : legend.itemHiddenStyle);
+			legendItem.css(item.visible ?
+				legend.itemStyle :
+				legend.itemHiddenStyle
+			);
 			/*= } =*/
 
 			// A CSS class to dim or hide other than the hovered series
