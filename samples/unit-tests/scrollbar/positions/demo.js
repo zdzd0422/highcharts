@@ -120,3 +120,28 @@ QUnit.test('#6573 - chart.scrollbar mispositioned when chart is inverted.', func
     );
 
 });
+
+QUnit.test('#6576 - xAxis.title should be considered when positioning scrollbar.', function (assert) {
+    var chart = Highcharts.chart('container', {
+            xAxis: [{
+                scrollbar: {
+                    enabled: true
+                },
+                title: {
+                    text: 'Test<br>with<br>breaks.'
+                }
+            }],
+            series: [{
+                data: [4, 20, 100, 5, 2, 33, 12, 23]
+            }]
+        }),
+        axis = chart.xAxis[0],
+        bbox = axis.axisTitle.getBBox(true);
+
+    assert.strictEqual(
+        axis.scrollbar.y > bbox.y + bbox.height,
+        true,
+        'Scrollbar rendered below xAxis.title.'
+    );
+
+});
