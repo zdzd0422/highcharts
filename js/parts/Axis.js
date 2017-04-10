@@ -127,6 +127,7 @@ H.Axis.prototype = {
 			//text: null,
 			align: 'middle', // low, middle or high
 			//margin: 0 for horizontal, 10 for vertical axes,
+			// reserveSpace: true, // docs
 			//rotation: 0,
 			//side: 'outside',
 			/*= if (build.classic) { =*/
@@ -1298,8 +1299,17 @@ H.Axis.prototype = {
 		// this axis, then min and max are equal and tickPositions.length is 0
 		// or 1. In this case, add some padding in order to center the point,
 		// but leave it with one tick. #1337.
-		this.single = this.min === this.max && defined(this.min) &&
-			!this.tickAmount && options.allowDecimals !== false;
+		this.single =
+			this.min === this.max &&
+			defined(this.min) &&
+			!this.tickAmount &&
+			(
+				// Data is on integer (#6563)
+				parseInt(this.min, 10) === this.min ||
+
+				// Between integers and decimals are not allowed (#6274)
+				options.allowDecimals !== false
+			);
 
 		// Find the tick positions
 		this.tickPositions = tickPositions = tickPositionsOption && tickPositionsOption.slice(); // Work on a copy (#1565)
@@ -2133,8 +2143,8 @@ H.Axis.prototype = {
 		if (axisTitleOptions && axisTitleOptions.text && axisTitleOptions.enabled !== false) {
 			axis.addTitle(showAxis);
 
-			if (showAxis) {
-				axis.titleOffset = titleOffset = axis.axisTitle.getBBox()[horiz ? 'height' : 'width'];
+			if (showAxis && axisTitleOptions.reserveSpace !== false) {
+				titleOffset = axis.axisTitle.getBBox()[horiz ? 'height' : 'width'];
 				titleOffsetOption = axisTitleOptions.offset;
 				titleMargin = defined(titleOffsetOption) ? 0 : pick(axisTitleOptions.margin, horiz ? 5 : 10);
 			}
