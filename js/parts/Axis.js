@@ -2134,7 +2134,7 @@ H.Axis.prototype = {
 			axis.addTitle(showAxis);
 
 			if (showAxis) {
-				titleOffset = axis.axisTitle.getBBox()[horiz ? 'height' : 'width'];
+				axis.titleOffset = titleOffset = axis.axisTitle.getBBox()[horiz ? 'height' : 'width'];
 				titleOffsetOption = axisTitleOptions.offset;
 				titleMargin = defined(titleOffsetOption) ? 0 : pick(axisTitleOptions.margin, horiz ? 5 : 10);
 			}
