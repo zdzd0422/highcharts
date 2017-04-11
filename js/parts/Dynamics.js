@@ -24,6 +24,7 @@ var addEvent = H.addEvent,
 	inArray = H.inArray,
 	isNumber = H.isNumber,
 	isObject = H.isObject,
+	isArray = H.isArray,
 	merge = H.merge,
 	pick = H.pick,
 	Point = H.Point,
@@ -685,7 +686,17 @@ extend(Axis.prototype, /** @lends Axis.prototype */ {
 		// Remove the axis
 		erase(chart.axes, this);
 		erase(chart[key], this);
-		chart.options[key].splice(this.options.index, 1);
+
+		if (this.legendGroup) { // #6488 destroy colorAxis leaves legend
+			chart.legend.destroy();
+		}
+
+		if (isArray(chart.options[key])) {
+			chart.options[key].splice(this.options.index, 1);
+		} else {
+			delete chart.options[key];
+		}
+
 		each(chart[key], function (axis, i) { // Re-index, #1706
 			axis.options.index = i;
 		});
