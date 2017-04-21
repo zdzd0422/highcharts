@@ -230,7 +230,7 @@ wrap(Tick.prototype, 'getMarkPath', function (proceed) {
 	var path = proceed.apply(this, [].slice.call(arguments, 1));	
 
 	// Do not do this if the chart is not 3D
-	if (!this.axis.chart.is3d() || this.coll === 'colorAxis') {
+	if (!this.axis.chart.is3d() || this.axis.coll === 'colorAxis') {
 		return path;
 	}
 
@@ -251,7 +251,7 @@ wrap(Tick.prototype, 'getLabelPosition', function (proceed) {
 	var pos = proceed.apply(this, [].slice.call(arguments, 1));
 
 	// Do not do this if the chart is not 3D
-	if (this.axis.chart.is3d() && this.coll !== 'colorAxis') {
+	if (this.axis.chart.is3d() && this.axis.coll !== 'colorAxis') {
 		pos = perspective([this.axis.swapZ({ x: pos.x, y: pos.y, z: 0 })], this.axis.chart, false)[0];
 	}
 	return pos;

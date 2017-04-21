@@ -292,8 +292,14 @@ extend(Chart.prototype, /** @lends Highcharts.Chart.prototype */ {
 		// update the first series in the chart. Setting two series without
 		// an id will update the first and the second respectively (#6019)
 		// chart.update and responsive.
-		each(['xAxis', 'yAxis', 'zAxis',
-			'series', 'colorAxis', 'pane'], function (coll) {
+		each([
+			'xAxis',
+			'yAxis',
+			'zAxis',
+			'series',
+			'colorAxis',
+			'pane'
+		], function (coll) {
 			if (options[coll]) {
 				each(splat(options[coll]), function (newOptions, i) {
 					var item = (
@@ -687,13 +693,9 @@ extend(Axis.prototype, /** @lends Axis.prototype */ {
 		erase(chart.axes, this);
 		erase(chart[key], this);
 
-		if (this.legendGroup) { // #6488 destroy colorAxis leaves legend
-			chart.legend.destroy();
-		}
-
 		if (isArray(chart.options[key])) {
 			chart.options[key].splice(this.options.index, 1);
-		} else {
+		} else { // color axis, #6488
 			delete chart.options[key];
 		}
 

@@ -1,22 +1,22 @@
 QUnit.test('destroy. #6488', function (assert) {
     var chart = Highcharts.chart('container', {
-          chart: {
+        chart: {
             type: 'heatmap'
-          },
-          colorAxis: {
+        },
+        colorAxis: {
             id: 'col-ax',
             min: 0,
             minColor: '#FFFFFF',
             maxColor: Highcharts.getOptions().colors[0]
-          },
-          series: [{
+        },
+        series: [{
             borderWidth: 1,
             data: [
               [0, 0, 10],
               [0, 1, 19]
             ]
-          }]
-        });
+        }]
+    });
 
     chart.get('col-ax').remove();
 

@@ -152,6 +152,9 @@ var seriesProto = Series.prototype,
 
 			return ret;
 		},
+		// docs, add to http://api.highcharts.com/highstock/plotOptions.series.dataGrouping.approximation
+		// The same as average, but for series with multiple values, like area
+		// ranges.
 		averages: function () { // #5479
 			var ret = [];
 
