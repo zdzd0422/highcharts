@@ -800,6 +800,7 @@ H.Series = H.seriesType('line', null, { // base series options
 			cropStart = series.cropStart || 0,
 			cursor,
 			hasGroupedData = series.hasGroupedData,
+			keys = options.keys,
 			point,
 			points = [],
 			i;
@@ -810,16 +811,28 @@ H.Series = H.seriesType('line', null, { // base series options
 			data = series.data = arr;
 		}
 
+		if (keys && hasGroupedData) {
+			// grouped data has already applied keys (#6590)
+			series.options.keys = false;
+		}
+
 		for (i = 0; i < processedDataLength; i++) {
 			cursor = cropStart + i;
 			if (!hasGroupedData) {
 				point = data[cursor];
 				if (!point && dataOptions[cursor] !== undefined) { // #970
-					data[cursor] = point = (new PointClass()).init(series, dataOptions[cursor], processedXData[i]);
+					data[cursor] = point = (new PointClass()).init(
+						series,
+						dataOptions[cursor],
+						processedXData[i]
+					);
 				}
 			} else {
 				// splat the y data in case of ohlc data array
-				point = (new PointClass()).init(series, [processedXData[i]].concat(splat(processedYData[i])));
+				point = (new PointClass()).init(
+					series,
+					[processedXData[i]].concat(splat(processedYData[i]))
+				);
 				point.dataGroup = series.groupMap[i];
 			}
 			if (point) { // #6279
@@ -827,6 +840,9 @@ H.Series = H.seriesType('line', null, { // base series options
 				points[i] = point;
 			}
 		}
+
+		// restore keys options (#6590)
+		series.options.keys = keys;
 
 		// Hide cropped-away points - this only runs when the number of points is above cropThreshold, or when
 		// swithching view from non-grouped data to grouped data (#637)
