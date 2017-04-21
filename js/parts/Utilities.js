@@ -548,10 +548,11 @@ H.isHTMLElement = function (obj) {
  * @returns {Boolean} - True if the argument is an class.
  */
 H.isClass = function (obj) {
+	var c = obj && obj.constructor;
 	return !!(
 		H.isObject(obj, true) &&
-    !H.isHTMLElement(obj) &&
-		(obj.constructor && obj.constructor.name !== 'Object')
+		!H.isHTMLElement(obj) &&
+		(c && c.name && c.name !== 'Object')
 	);
 };
 
