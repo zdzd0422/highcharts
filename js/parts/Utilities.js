@@ -449,7 +449,7 @@ H.merge = function () {
 					if (
 						H.isObject(value, true) &&
 						!H.isClass(value) &&
-						!H.isHTMLElement(value)
+						!H.isDOMElement(value)
 					) {
 						copy[key] = doCopy(copy[key] || {}, value);
 
@@ -530,12 +530,12 @@ H.isObject = function (obj, strict) {
 /**
  * Utility function to check if an Object is a HTML Element.
  *
- * @function #isHTMLElement
+ * @function #isDOMElement
  * @memberOf Highcharts
  * @param {Object} obj - The item to check.
  * @returns {Boolean} - True if the argument is a HTML Element.
  */
-H.isHTMLElement = function (obj) {
+H.isDOMElement = function (obj) {
 	return H.isObject(obj) && typeof obj.nodeType === 'number';
 };
 
@@ -551,7 +551,7 @@ H.isClass = function (obj) {
 	var c = obj && obj.constructor;
 	return !!(
 		H.isObject(obj, true) &&
-		!H.isHTMLElement(obj) &&
+		!H.isDOMElement(obj) &&
 		(c && c.name && c.name !== 'Object')
 	);
 };
