@@ -364,60 +364,60 @@ QUnit.test('DateFormat', function (assert) {
 });
 
 
-QUnit.test('isDOMElement', function (assert) {
-    var isDOMElement = Highcharts.isDOMElement,
+QUnit.test('isHTMLElement', function (assert) {
+    var isHTMLElement = Highcharts.isHTMLElement,
         // Mock an ES6 class
         classes = {
             constructor: function TestClass() {}
         };
 
     assert.strictEqual(
-      isDOMElement("a"),
+      isHTMLElement("a"),
       false,
       'String is not a HTML Element'
     );
     assert.strictEqual(
-      isDOMElement(1),
+      isHTMLElement(1),
       false,
       'Number is not a HTML Element'
     );
     assert.strictEqual(
-      isDOMElement(true),
+      isHTMLElement(true),
       false,
       'Boolean is not a HTML Element'
     );
     assert.strictEqual(
-      isDOMElement(null),
+      isHTMLElement(null),
       false,
       'null is not a HTML Element'
     );
     assert.strictEqual(
-      isDOMElement(undefined),
+      isHTMLElement(undefined),
       false,
       'undefined is not a HTML Element'
     );
     assert.strictEqual(
-      isDOMElement([1]),
+      isHTMLElement([1]),
       false,
       'Array is not a HTML Element'
     );
     assert.strictEqual(
-      isDOMElement({ a: 1 }),
+      isHTMLElement({ a: 1 }),
       false,
       'Object is not a HTML Element'
     );
     assert.strictEqual(
-      isDOMElement(classes),
+      isHTMLElement(classes),
       false,
       'Object classes is not a HTML Element'
     );
     assert.strictEqual(
-      isDOMElement(document.createElement('div')),
+      isHTMLElement(document.createElement('div')),
       true,
       'HTMLElement is a HTML Element'
     );
     assert.strictEqual(
-      isDOMElement(function Test() {}),
+      isHTMLElement(function Test() {}),
       false,
       'Function is not a HTML Element'
     );
@@ -651,3 +651,93 @@ QUnit.test('find', function (assert) {
     );
 });
 
+QUnit.test('objectEach', function (assert) {
+    var objectEach = Highcharts.objectEach,
+        obj1 = {
+            '1': 1,
+            '2': '2',
+            3: '3'
+        },
+        obj1Expected = {
+            '1': 1,
+            '2': '2',
+            '3': '3'
+        },
+        obj1Actual = {},
+        testFunction = function () {
+            return 2;
+        },
+        TestObj = function () {
+            this.one = 1;
+            this.two = testFunction;
+        },
+        obj2,
+        obj2Expected = {
+            'one': 1,
+            'two': testFunction
+        },
+        obj2Actual = {},
+        arr1 = ['1', '2', '3'],
+        arr1Expected = {
+            '0': '1',
+            '1': '2',
+            '2': '3'
+        },
+        arr1Actual = {},
+        obj3 = {
+            'one': 'one'
+        },
+        obj3This = {
+            'ctx': 'ctx'
+        };
+
+    TestObj.prototype.three = 3;
+    TestObj.prototype.four = function () {
+        return 4;
+    };
+    obj2 = new TestObj();
+
+    objectEach(obj1, function (val, key) {
+        obj1Actual[key] = val;
+    });
+
+    assert.deepEqual(
+        obj1Actual,
+        obj1Expected,
+        'Order of callback params is [val, key]'
+    );
+
+    objectEach(obj2, function (val, key) {
+        obj2Actual[key] = val;
+    });
+
+    assert.deepEqual(
+        obj2Actual,
+        obj2Expected,
+        'Prototype properties are not included'
+    );
+
+    objectEach(arr1, function (val, key) {
+        arr1Actual[key] = val;
+    });
+
+    assert.deepEqual(
+        arr1Actual,
+        arr1Expected,
+        'Supports arrays'
+    );
+
+    objectEach(obj3, function (val, key, ctx) {
+        assert.equal(
+            this,
+            obj3This,
+            '3rd param injects context to use with `this`'
+        );
+
+        assert.equal(
+            ctx,
+            obj3,
+            '3rd param in callback is the object being iterated over'
+        );
+    }, obj3This);
+});
