@@ -2803,19 +2803,23 @@ SVGRenderer.prototype = {
 
 		var ren = this,
 			obj,
+			imageRegex = /^url\((.*?)\)$/,
+			isImage = imageRegex.test(symbol),
+			sym = !isImage && (this.symbols[symbol] ? symbol : 'circle'),
+			
 
 			// get the symbol definition function
-			symbolFn = this.symbols[symbol],
+			symbolFn = sym && this.symbols[sym],
 
 			// check if there's a path defined for this symbol
-			path = defined(x) && symbolFn && this.symbols[symbol](
+			path = defined(x) && symbolFn && symbolFn.call(
+				this.symbols,
 				Math.round(x),
 				Math.round(y),
 				width,
 				height,
 				options
 			),
-			imageRegex = /^url\((.*?)\)$/,
 			imageSrc,
 			centerImage;
 
@@ -2828,7 +2832,7 @@ SVGRenderer.prototype = {
 			
 			// expando properties for use in animate and attr
 			extend(obj, {
-				symbolName: symbol,
+				symbolName: sym,
 				x: x,
 				y: y,
 				width: width,
@@ -2839,8 +2843,8 @@ SVGRenderer.prototype = {
 			}
 
 
-		// image symbols
-		} else if (imageRegex.test(symbol)) {
+		// Image symbols
+		} else if (isImage) {
 
 			
 			imageSrc = symbol.match(imageRegex)[1];

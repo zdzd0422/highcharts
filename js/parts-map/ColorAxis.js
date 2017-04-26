@@ -429,7 +429,7 @@ extend(ColorAxis.prototype, {
 		// When updating data classes, destroy old items and make sure new ones are created (#3207)
 		if (newOptions.dataClasses && legend.allItems) {
 			each(legend.allItems, function (item) {
-				if (item.isDataClass) {
+				if (item.isDataClass && item.legendGroup) {
 					item.legendGroup.destroy();
 				}
 			});
@@ -448,13 +448,13 @@ extend(ColorAxis.prototype, {
 	},
 
 	/**
-	 * Extend basic axis destroy by also destroying the legend item.
+	 * Extend basic axis remove by also removing the legend item.
 	 */
-	destroy: function () {
+	remove: function () {
 		if (this.legendItem) {
 			this.chart.legend.destroyItem(this);
 		}
-		Axis.prototype.destroy.call(this);
+		Axis.prototype.remove.call(this);
 	},
 
 	/**
