@@ -304,7 +304,19 @@ gulp.task('jsdoc', function (cb) {
 
     const templateDir = './../highcharts-docstrap';
 
-    gulp.src(['README.md', './js/parts/*.js'], { read: false })
+    gulp.src([
+        'README.md',
+        './js/parts/Utilities.js',
+        './js/parts/Axis.js',
+        './js/parts/Chart.js',
+        './js/parts/Dynamics.js',
+        './js/parts/Globals.js',
+        './js/parts/Options.js',
+        './js/parts/PlotLineOrBand.js',
+        './js/modules/drilldown.src.js',
+        './js/modules/exporting.src.js',
+        './js/modules/offline-exporting.src.js'
+    ], { read: false })
     // gulp.src(['README.md', './js/parts/Options.js'], { read: false })
         .pipe(jsdoc({
             navOptions: {

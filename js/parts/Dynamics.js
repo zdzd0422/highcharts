@@ -38,14 +38,25 @@ var addEvent = H.addEvent,
 extend(Chart.prototype, /** @lends Highcharts.Chart.prototype */ {
 
 	/**
-	 * Add a series dynamically after  time
+	 * Add a series to the chart after render time. Note that this method should
+	 * never be used when adding data synchronously at chart render time, as it
+	 * adds expense to the calculations and rendering. When adding data at the
+	 * same time as the chart is initiated, add the series as a configuration
+	 * option instead. With multiple axes, the `offset` is dynamically adjusted.
 	 *
-	 * @param {Object} options The config options
-	 * @param {Boolean} redraw Whether to redraw the chart after adding. Defaults to true.
-	 * @param {Boolean|Object} animation Whether to apply animation, and optionally animation
-	 *    configuration
+	 * @param  {SeriesOptions} options
+	 *         The config options for the series.
+	 * @param  {Boolean} [redraw=true]
+	 *         Whether to redraw the chart after adding.
+	 * @param  {AnimationOptions} animation
+	 *         Whether to apply animation, and optionally animation
+	 *         configuration.
 	 *
-	 * @return {Object} series The newly created series object
+	 * @return {Highcharts.Series}
+	 *         The newly created series object.
+	 *
+	 * @sample highcharts/members/chart-addseries/
+	 *         Add a series from a button
 	 */
 	addSeries: function (options, redraw, animation) {
 		var series,
@@ -69,9 +80,21 @@ extend(Chart.prototype, /** @lends Highcharts.Chart.prototype */ {
 	},
 
 	/**
-     * Add an axis to the chart
-     * @param {Object} options The axis option
-     * @param {Boolean} isX Whether it is an X axis or a value axis
+     * Add an axis to the chart after render time. Note that this method should
+     * never be used when adding data synchronously at chart render time, as it
+     * adds expense to the calculations and rendering. When adding data at the
+     * same time as the chart is initiated, add the axis as a configuration
+     * option instead.
+     * @param  {AxisOptions} options
+     *         The axis options.
+     * @param  {Boolean} [isX=false]
+     *         Whether it is an X axis or a value axis.
+     * @param  {Boolean} [redraw=true]
+     *         Whether to redraw the chart after adding.
+     * @param  {AnimationOptions} [animation=true]
+     *         Whether and how to apply animation in the redraw.
+     *
+     * @sample highcharts/members/chart-addaxis/ Add and remove axes
      */
 	addAxis: function (options, isX, redraw, animation) {
 		var key = isX ? 'xAxis' : 'yAxis',
@@ -158,7 +181,11 @@ extend(Chart.prototype, /** @lends Highcharts.Chart.prototype */ {
 	},
 
 	/**
-	 * Hide the loading layer
+	 * Hide the loading layer.
+	 *
+	 * @see    Highcharts.Chart#showLoading
+	 * @sample highcharts/members/chart-hideloading/
+	 *         Show and hide loading from a button
 	 */
 	hideLoading: function () {
 		var options = this.options,
@@ -654,19 +681,27 @@ extend(Series.prototype, /** @lends Series.prototype */ {
 });
 
 // Extend the Axis.prototype for dynamic methods
-extend(Axis.prototype, /** @lends Axis.prototype */ {
+extend(Axis.prototype, /** @lends Highcharts.Axis.prototype */ {
 
 	/**
-	 * Axis.update with a new options structure
+	 * Update an axis object with a new set of options. The options are merged
+	 * with the existing options, so only new or altered options need to be
+	 * specified.
+	 *
+	 * @param  {Object} options
+	 *         The new options that will be merged in with existing options on
+	 *         the axis.
+	 * @sample highcharts/members/axis-update/ Axis update demo
 	 */
-	update: function (newOptions, redraw) {
+	update: function (options, redraw) {
 		var chart = this.chart;
 
-		newOptions = chart.options[this.coll][this.options.index] = merge(this.userOptions, newOptions);
+		options = chart.options[this.coll][this.options.index] =
+			merge(this.userOptions, options);
 
 		this.destroy(true);
 
-		this.init(chart, extend(newOptions, { events: undefined }));
+		this.init(chart, extend(options, { events: undefined }));
 
 		chart.isDirtyBox = true;
 		if (pick(redraw, true)) {
@@ -675,7 +710,12 @@ extend(Axis.prototype, /** @lends Axis.prototype */ {
 	},
 
 	/**
-     * Remove the axis from the chart
+     * Remove the axis from the chart.
+     *
+     * @param {Boolean} [redraw=true] Whether to redraw the chart following the
+     * remove.
+     *
+     * @sample highcharts/members/chart-addaxis/ Add and remove axes
      */
 	remove: function (redraw) {
 		var chart = this.chart,
@@ -712,16 +752,24 @@ extend(Axis.prototype, /** @lends Axis.prototype */ {
 	},
 
 	/**
-	 * Update the axis title by options
+	 * Update the axis title by options after render time.
+	 *
+	 * @param  {TitleOptions} titleOptions
+	 *         The additional title options.
+	 * @param  {Boolean} [redraw=true]
+	 *         Whether to redraw the chart after setting the title.
+	 * @sample highcharts/members/axis-settitle/ Set a new Y axis title
 	 */
-	setTitle: function (newTitleOptions, redraw) {
-		this.update({ title: newTitleOptions }, redraw);
+	setTitle: function (titleOptions, redraw) {
+		this.update({ title: titleOptions }, redraw);
 	},
 
 	/**
-	 * Set new axis categories and optionally redraw
-	 * @param {Array} categories
-	 * @param {Boolean} redraw
+	 * Set new axis categories and optionally redraw.
+	 * @param {Array.<String>} categories - The new categories.
+	 * @param {Boolean} [redraw=true] - Whether to redraw the chart.
+	 * @sample highcharts/members/axis-setcategories/ Set categories by click on
+	 * a button
 	 */
 	setCategories: function (categories, redraw) {
 		this.update({ categories: categories }, redraw);

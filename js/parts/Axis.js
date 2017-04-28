@@ -8,14 +8,12 @@ import H from './Globals.js';
 import './Utilities.js';
 import './Color.js';
 import './Options.js';
-import './PlotLineOrBand.js';
 import './Tick.js';
 
 var addEvent = H.addEvent,
 	animObject = H.animObject,
 	arrayMax = H.arrayMax,
 	arrayMin = H.arrayMin,
-	AxisPlotLineOrBandExtension = H.AxisPlotLineOrBandExtension,
 	color = H.color,
 	correctFloat = H.correctFloat,
 	defaultOptions = H.defaultOptions,
@@ -36,23 +34,44 @@ var addEvent = H.addEvent,
 	normalizeTickInterval = H.normalizeTickInterval,
 	objectEach = H.objectEach,
 	pick = H.pick,
-	PlotLineOrBand = H.PlotLineOrBand,
 	removeEvent = H.removeEvent,
 	splat = H.splat,
 	syncTimeout = H.syncTimeout,
 	Tick = H.Tick;
 	
 /**
- * Create a new axis object.
- * @constructor Axis
- * @param {Object} chart
- * @param {Object} options
+ * Create a new axis object. Called internally when instanciating a new chart or
+ * adding axes by {@link Chart#addAxis}.
+ *
+ * A chart can have from 0 axes (pie chart) to multiples. In a normal, single
+ * series cartesian chart, there is one X axis and one Y axis.
+ * 
+ * The X axis or axes are referenced by {@link Highcharts.Chart.xAxis}, which is
+ * an array of Axis objects. If there is only one axis, it can be referenced
+ * through `chart.xAxis[0]`, and multiple axes have increasing indices. The same
+ * pattern goes for Y axes.
+ * 
+ * If you need to get the axes from a series object, use the `series.xAxis` and
+ * `series.yAxis` properties. These are not arrays, as one series can only be
+ * associated to one X and one Y axis.
+ * 
+ * A third way to reference the axis programmatically is by `id`. Add an `id` in
+ * the axis configuration options, and get the axis by
+ * {@link Highcharts.Chart#get}.
+ * 
+ * Configuration options for the axes are given in options.xAxis and
+ * options.yAxis.
+ * 
+ * @class Highcharts.Axis
+ * @memberOf Highcharts
+ * @param {Highcharts.Chart} chart - The Chart instance to apply the axis on.
+ * @param {Object} options - Axis options
  */
-H.Axis = function () {
+var Axis = function () {
 	this.init.apply(this, arguments);
 };
 
-H.Axis.prototype = {
+H.extend(Axis.prototype, /** @lends Highcharts.Axis.prototype */{
 
 	/**
 	 * Default options for the X axis - the Y axis has extended defaults
@@ -399,10 +418,6 @@ H.Axis.prototype = {
 			axis.reversed = true;
 		}
 
-		axis.removePlotBand = axis.removePlotBandOrLine;
-		axis.removePlotLine = axis.removePlotBandOrLine;
-
-
 		// register event listeners
 		objectEach(events, function (event, eventType) {
 			addEvent(axis, eventType, event);
@@ -656,23 +671,38 @@ H.Axis.prototype = {
 	},
 
 	/**
-	 * Utility method to translate an axis value to pixel position.
-	 * @param {Number} value A value in terms of axis units
-	 * @param {Boolean} paneCoordinates Whether to return the pixel coordinate relative to the chart
-	 *        or just the axis/pane itself.
+	 * Translate a value in terms of axis units into pixels within the chart.
+	 * 
+	 * @param  {Number} value
+	 *         A value in terms of axis units.
+	 * @param  {Boolean} paneCoordinates
+	 *         Whether to return the pixel coordinate relative to the chart or
+	 *         just the axis/pane itself.
+	 * @return {Number} Pixel position of the value on the chart or axis.
 	 */
 	toPixels: function (value, paneCoordinates) {
-		return this.translate(value, false, !this.horiz, null, true) + (paneCoordinates ? 0 : this.pos);
+		return this.translate(value, false, !this.horiz, null, true) +
+			(paneCoordinates ? 0 : this.pos);
 	},
 
 	/**
-	 * Utility method to translate a pixel position in to an axis value.
-	 * @param {Number} pixel The pixel value coordinate
-	 * @param {Boolean} paneCoordiantes Whether the input pixel is relative to the chart or just the
-	 *        axis/pane itself.
+	 * Translate a pixel position along the axis to a value in terms of axis
+	 * units.
+	 * @param  {Number} pixel
+	 *         The pixel value coordinate.
+	 * @param  {Boolean} paneCoordiantes
+	 *         Whether the input pixel is relative to the chart or just the
+	 *         axis/pane itself.
+	 * @return {Number} The axis value.
 	 */
 	toValue: function (pixel, paneCoordinates) {
-		return this.translate(pixel - (paneCoordinates ? 0 : this.pos), true, !this.horiz, null, true);
+		return this.translate(
+			pixel - (paneCoordinates ? 0 : this.pos),
+			true,
+			!this.horiz,
+			null,
+			true
+		);
 	},
 
 	/**
@@ -1607,14 +1637,31 @@ H.Axis.prototype = {
 	},
 
 	/**
-	 * Set the extremes and optionally redraw
-	 * @param {Number} newMin
-	 * @param {Number} newMax
-	 * @param {Boolean} redraw
-	 * @param {Boolean|Object} animation Whether to apply animation, and optionally animation
-	 *    configuration
-	 * @param {Object} eventArguments
+	 * Set the minimum and maximum of the axes after render time. If the
+	 * `startOnTick` and `endOnTick` options are true, the minimum and maximum
+	 * values are rounded off to the nearest tick. To prevent this, these
+	 * options can be set to false before calling setExtremes. Also, setExtremes
+	 * will not allow a range lower than the `minRange` option, which by default
+	 * is the range of five points.
+	 * 
+	 * @param {Number} [newMin]
+	 *        The new minimum value.
+	 * @param {Number} [newMax]
+	 *        The new maximum value.
+	 * @param {Boolean} [redraw=true]
+	 *        Whether to redraw the chart or wait for an explicit call to 
+	 *        {@link Highcharts.Chart#redraw}
+	 * @param {AnimationOptions} [animation=true]
+	 *        Enable or modify animations.
+	 * @param {Object} [eventArguments]
+	 *        Arguments to be accessed in event handler.
 	 *
+	 * @sample highcharts/members/axis-setextremes/
+	 *        Set extremes from a button
+	 * @sample highcharts/members/axis-setextremes-datetime/
+	 *        Set extremes on a datetime axis
+	 * @sample highcharts/members/axis-setextremes-off-ticks/
+	 *        Set extremes off ticks
 	 */
 	setExtremes: function (newMin, newMax, redraw, animation, eventArguments) {
 		var axis = this,
@@ -1732,7 +1779,28 @@ H.Axis.prototype = {
 	},
 
 	/**
-	 * Get the actual axis extremes
+	 * The returned object literal from the {@link Highcharts.Axis#getExtremes}
+	 * function. 
+	 * @typedef {Object} Extremes
+	 * @property {Number} dataMax
+	 *         The maximum value of the axis' associated series.
+	 * @property {Number} dataMin
+	 *         The minimum value of the axis' associated series.
+	 * @property {Number} max
+	 *         The maximum axis value, either automatic or set manually. If the
+	 *         `max` option is not set, `maxPadding` is 0 and `endOnTick` is
+	 *         false, this value will be the same as `dataMax`.
+	 * @property {Number} min
+	 *         The minimum axis value, either automatic or set manually. If the
+	 *         `min` option is not set, `minPadding` is 0 and `startOnTick` is
+	 *         false, this value will be the same as `dataMin`.
+	 */
+	/**
+	 * Get the current extremes for the axis.
+	 *
+	 * @returns {Extremes}
+	 * An object containing extremes information.
+	 * @sample members/axis-getextremes/ Report extremes by click on a button
 	 */
 	getExtremes: function () {
 		var axis = this,
@@ -2441,7 +2509,7 @@ H.Axis.prototype = {
 					to = tickPositions[i + 1] !== undefined ? tickPositions[i + 1] + tickmarkOffset : axis.max - tickmarkOffset; 
 					if (i % 2 === 0 && pos < axis.max && to <= axis.max + (chart.polar ? -tickmarkOffset : tickmarkOffset)) { // #2248, #4660
 						if (!alternateBands[pos]) {
-							alternateBands[pos] = new PlotLineOrBand(axis);
+							alternateBands[pos] = new H.PlotLineOrBand(axis);
 						}
 						from = pos + tickmarkOffset; // #949
 						alternateBands[pos].options = {
@@ -2708,6 +2776,7 @@ H.Axis.prototype = {
 			this.cross.hide();
 		}
 	}
-}; // end Axis
+}); // end Axis
 
-extend(H.Axis.prototype, AxisPlotLineOrBandExtension);
+H.Axis = Axis;
+export default Axis;
