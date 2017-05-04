@@ -689,7 +689,8 @@ wrap(Axis.prototype, 'render', function (proceed) {
 				axis.left, 
 				axis.top + axis.height + 2 + axis.chart.scrollbarsOffsets[1] +
 					(axis.opposite ?
-						0 : titleOffset + axis.axisTitleMargin + axis.offset
+						0 :
+						titleOffset + axis.axisTitleMargin + axis.offset
 					),
 				axis.width,
 				axis.height
@@ -698,8 +699,9 @@ wrap(Axis.prototype, 'render', function (proceed) {
 		} else {
 			scrollbar.position(
 				axis.left + axis.width + 2 + axis.chart.scrollbarsOffsets[0] +
-					(axis.opposite ?
-						titleOffset + axis.axisTitleMargin + axis.offset : 0
+					(axis.opposite ? 
+						titleOffset + axis.axisTitleMargin + axis.offset :
+						0
 					),
 				axis.top, 
 				axis.width, 

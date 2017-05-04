@@ -42,7 +42,7 @@ seriesType('pie', 'line', {
 		// connectorWidth: 1,
 		// connectorColor: point.color,
 		// connectorPadding: 5,
-		distance: 30, // docs: now also on individual pie points
+		distance: 30,
 		enabled: true,
 		formatter: function () { // #2945
 			return this.point.isNull ? undefined : this.point.name;
@@ -417,7 +417,7 @@ seriesType('pie', 'line', {
 	 * Negative points are not valid (#1530, #3623, #5322)
 	 */
 	isValid: function () {
-		return this.y >= 0;
+		return H.isNumber(this.y, true) && this.y >= 0;
 	},
 
 	/**

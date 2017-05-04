@@ -147,7 +147,7 @@ H.extend(Axis.prototype, /** @lends Highcharts.Axis.prototype */{
 			//text: null,
 			align: 'middle', // low, middle or high
 			//margin: 0 for horizontal, 10 for vertical axes,
-			// reserveSpace: true, // docs
+			// reserveSpace: true,
 			//rotation: 0,
 			//side: 'outside',
 			/*= if (build.classic) { =*/
@@ -2254,7 +2254,8 @@ H.extend(Axis.prototype, /** @lends Highcharts.Axis.prototype */{
 			axis.addTitle(showAxis);
 
 			if (showAxis && axisTitleOptions.reserveSpace !== false) {
-				axis.titleOffset = titleOffset = axis.axisTitle.getBBox()[horiz ? 'height' : 'width'];
+				axis.titleOffset = titleOffset =
+					axis.axisTitle.getBBox()[horiz ? 'height' : 'width'];
 				titleOffsetOption = axisTitleOptions.offset;
 				titleMargin = defined(titleOffsetOption) ? 0 : pick(axisTitleOptions.margin, horiz ? 5 : 10);
 			}
